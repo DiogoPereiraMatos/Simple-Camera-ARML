@@ -6,6 +6,7 @@ import android.hardware.SensorManager
 import android.hardware.display.DisplayManager
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.util.Rational
 import android.util.Size
 import android.view.*
@@ -36,6 +37,11 @@ import com.simplemobiletools.commons.activities.BaseSimpleActivity
 import com.simplemobiletools.commons.extensions.toast
 import com.simplemobiletools.commons.helpers.PERMISSION_ACCESS_FINE_LOCATION
 import com.simplemobiletools.commons.helpers.ensureBackgroundThread
+import java.nio.ByteBuffer
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+
+typealias LumaListener = (luma: Double) -> Unit
 
 class CameraXPreview(
     private val activity: BaseSimpleActivity,
@@ -124,6 +130,30 @@ class CameraXPreview(
     private var lastCameraStartTime = 0L
     private var simpleLocationManager: SimpleLocationManager? = null
 
+    private lateinit var cameraExecutor: ExecutorService
+    private class LuminosityAnalyzer(private val listener: LumaListener) : ImageAnalysis.Analyzer {
+
+        private fun ByteBuffer.toByteArray(): ByteArray {
+            rewind()    // Rewind the buffer to zero
+            val data = ByteArray(remaining())
+            get(data)   // Copy the buffer into a byte array
+            return data // Return the byte array
+        }
+
+        override fun analyze(image: ImageProxy) {
+
+            val buffer = image.planes[0].buffer
+            val data = buffer.toByteArray()
+            val pixels = data.map { it.toInt() and 0xFF }
+            val luma = pixels.average()
+
+            listener(luma)
+
+            image.close()
+        }
+    }
+
+
     init {
         bindToLifeCycle()
     }
@@ -133,6 +163,8 @@ class CameraXPreview(
     }
 
     private fun startCamera(switching: Boolean = false) {
+        cameraExecutor = Executors.newSingleThreadExecutor()
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(activity.applicationContext)
         cameraProviderFuture.addListener({
             try {
@@ -170,6 +202,7 @@ class CameraXPreview(
         val rotation = previewView.display.rotation
         val rotatedResolution = getRotatedResolution(resolution, rotation)
 
+        val analyseUseCase = buildAnalyser()
         val previewUseCase = buildPreview(rotatedResolution, rotation)
         val captureUseCase = getCaptureUseCase(rotatedResolution, rotation)
 
@@ -181,6 +214,7 @@ class CameraXPreview(
             val viewPort = ViewPort.Builder(Rational(screenWidth, screenHeight), rotation).build()
 
             val useCaseGroup = UseCaseGroup.Builder()
+                .addUseCase(analyseUseCase)
                 .addUseCase(previewUseCase)
                 .addUseCase(captureUseCase)
                 .setViewPort(viewPort)
@@ -210,6 +244,16 @@ class CameraXPreview(
         } else {
             Size(resolution.width, resolution.height)
         }
+    }
+
+    private fun buildAnalyser(): ImageAnalysis {
+        return ImageAnalysis.Builder()
+            .build()
+            .also {
+                it.setAnalyzer(cameraExecutor, LuminosityAnalyzer { luma ->
+                    Log.d("ImageAnalyser", "Average luminosity: $luma")
+                })
+            }
     }
 
     private fun buildPreview(resolution: Size, rotation: Int): Preview {
