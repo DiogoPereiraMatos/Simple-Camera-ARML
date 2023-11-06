@@ -213,10 +213,15 @@ class CameraXPreview(
             val screenHeight = metrics.height()
             val viewPort = ViewPort.Builder(Rational(screenWidth, screenHeight), rotation).build()
 
-            val useCaseGroup = UseCaseGroup.Builder()
-                .addUseCase(analyseUseCase)
+            val useCaseGroupBuilder = UseCaseGroup.Builder()
                 .addUseCase(previewUseCase)
                 .addUseCase(captureUseCase)
+
+            if (config.isArmlEnabled)
+                useCaseGroupBuilder
+                    .addUseCase(analyseUseCase)
+
+            val useCaseGroup = useCaseGroupBuilder
                 .setViewPort(viewPort)
                 .build()
 
@@ -226,12 +231,22 @@ class CameraXPreview(
                 useCaseGroup,
             )
         } else {
-            cameraProvider.bindToLifecycle(
-                activity,
-                cameraSelector,
-                previewUseCase,
-                captureUseCase,
-            )
+            if (config.isArmlEnabled) {
+                cameraProvider.bindToLifecycle(
+                    activity,
+                    cameraSelector,
+                    previewUseCase,
+                    captureUseCase,
+                    analyseUseCase
+                )
+            } else {
+                cameraProvider.bindToLifecycle(
+                    activity,
+                    cameraSelector,
+                    previewUseCase,
+                    captureUseCase,
+                )
+            }
         }
         preview = previewUseCase
         setupZoomAndFocus()
