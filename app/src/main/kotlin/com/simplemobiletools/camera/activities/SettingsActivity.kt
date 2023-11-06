@@ -2,6 +2,8 @@ package com.simplemobiletools.camera.activities
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import com.google.ar.core.ArCoreApk
 import com.simplemobiletools.camera.BuildConfig
 import com.simplemobiletools.camera.R
@@ -18,6 +20,7 @@ import java.util.*
 import kotlin.system.exitProcess
 
 class SettingsActivity : SimpleActivity() {
+    private var userRequestedInstall: Boolean = true
     private val binding by viewBinding(ActivitySettingsBinding::inflate)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -275,8 +278,43 @@ class SettingsActivity : SimpleActivity() {
 
         settingsArml.isChecked = config.isArmlEnabled
         settingsArmlHolder.setOnClickListener {
-            settingsArml.toggle()
+            if (settingsArml.isChecked) {
+                settingsArml.toggle()
+            } else {
+                if (tryInstallARCore())
+                    settingsArml.toggle()
+            }
             config.isArmlEnabled = settingsArml.isChecked
+        }
+    }
+
+    private fun tryInstallARCore(): Boolean {
+        try {
+            when (ArCoreApk.getInstance().requestInstall(this, userRequestedInstall)) {
+                ArCoreApk.InstallStatus.INSTALLED -> {
+                    // Success: Safe to create the AR session.
+                    Log.d("SettingsARML", "ARCore installed.")
+                    return true
+                }
+                ArCoreApk.InstallStatus.INSTALL_REQUESTED -> {
+                    // When this method returns `INSTALL_REQUESTED`:
+                    // 1. ARCore pauses this activity.
+                    // 2. ARCore prompts the user to install or update Google Play
+                    //    Services for AR (market://details?id=com.google.ar.core).
+                    // 3. ARCore downloads the latest device profile data.
+                    // 4. ARCore resumes this activity. The next invocation of
+                    //    requestInstall() will either return `INSTALLED` or throw an
+                    //    exception if the installation or update did not succeed.
+                    Log.d("SettingsARML", "Installing ARCore...")
+                    userRequestedInstall = false
+                    return false
+                }
+            }
+        } catch (e: Exception) {
+            // Display an appropriate message to the user and return gracefully.
+            Toast.makeText(this, "Failed to download required resources. Try again.", Toast.LENGTH_LONG).show()
+            Log.d("SettingsARML", "Failed to download required resources. $e")
+            return false
         }
     }
 }
