@@ -25,6 +25,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.window.layout.WindowMetricsCalculator
 import com.bumptech.glide.load.ImageHeaderParser.UNKNOWN_ORIENTATION
+import com.google.ar.core.Session
+import com.google.ar.core.Config
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.extensions.*
 import com.simplemobiletools.camera.helpers.*
@@ -61,6 +63,7 @@ class CameraXPreview(
         private const val CAMERA_MODE_SWITCH_WAIT_TIME = 500L
     }
 
+    private lateinit var session: Session
     private val config = activity.config
     private val contentResolver = activity.contentResolver
     private val mainExecutor = ContextCompat.getMainExecutor(activity)
@@ -202,7 +205,6 @@ class CameraXPreview(
         val rotation = previewView.display.rotation
         val rotatedResolution = getRotatedResolution(resolution, rotation)
 
-        val analyseUseCase = buildAnalyser()
         val previewUseCase = buildPreview(rotatedResolution, rotation)
         val captureUseCase = getCaptureUseCase(rotatedResolution, rotation)
 
@@ -219,7 +221,7 @@ class CameraXPreview(
 
             if (config.isArmlEnabled)
                 useCaseGroupBuilder
-                    .addUseCase(analyseUseCase)
+                    .addUseCase(buildAnalyser())
 
             val useCaseGroup = useCaseGroupBuilder
                 .setViewPort(viewPort)
@@ -237,7 +239,7 @@ class CameraXPreview(
                     cameraSelector,
                     previewUseCase,
                     captureUseCase,
-                    analyseUseCase
+                    buildAnalyser()
                 )
             } else {
                 cameraProvider.bindToLifecycle(
@@ -262,6 +264,19 @@ class CameraXPreview(
     }
 
     private fun buildAnalyser(): ImageAnalysis {
+        // Create a new ARCore session.
+        session = Session(this.activity)
+
+        // Create a session config.
+        val config = Config(session)
+
+        // Do feature-specific operations here, such as enabling depth or turning on
+        // support for Augmented Faces.
+
+        // Configure the session.
+        session.configure(config)
+
+
         return ImageAnalysis.Builder()
             .build()
             .also {
