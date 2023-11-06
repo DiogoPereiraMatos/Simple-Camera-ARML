@@ -2,6 +2,7 @@ package com.simplemobiletools.camera.activities
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import com.google.ar.core.ArCoreApk
 import com.simplemobiletools.camera.BuildConfig
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.databinding.ActivitySettingsBinding
@@ -48,6 +49,7 @@ class SettingsActivity : SimpleActivity() {
         setupSavePhotosFolder()
         setupPhotoQuality()
         setupCaptureMode()
+        setupAR()
         updateTextColors(binding.settingsHolder)
 
         val properPrimaryColor = getProperPrimaryColor()
@@ -262,5 +264,19 @@ class SettingsActivity : SimpleActivity() {
 
     private fun updateCaptureMode(captureMode: CaptureMode) {
         binding.settingsCaptureMode.text = getString(captureMode.stringResId)
+    }
+
+    private fun setupAR() = binding.apply {
+        settingsArmlHolder.beGoneIf(ArCoreApk.getInstance().checkAvailability(applicationContext).isUnsupported)
+
+        listOf(settingsArHolder, settingsArLabel).forEach {
+            it.beGoneIf(settingsArmlHolder.isGone())
+        }
+
+        settingsArml.isChecked = config.isArmlEnabled
+        settingsArmlHolder.setOnClickListener {
+            settingsArml.toggle()
+            config.isArmlEnabled = settingsArml.isChecked
+        }
     }
 }
