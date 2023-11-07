@@ -6,6 +6,7 @@ import android.hardware.SensorManager
 import android.hardware.display.DisplayManager
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.util.Rational
 import android.util.Size
 import android.view.*
@@ -29,6 +30,7 @@ import com.google.ar.core.Config
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.extensions.*
 import com.simplemobiletools.camera.helpers.*
+import com.simplemobiletools.camera.helpers.ai.ARML
 import com.simplemobiletools.camera.interfaces.MyPreview
 import com.simplemobiletools.camera.models.CaptureMode
 import com.simplemobiletools.camera.models.MediaOutput
@@ -59,7 +61,8 @@ class CameraXPreview(
         private const val CAMERA_MODE_SWITCH_WAIT_TIME = 500L
     }
 
-    private lateinit var session: Session
+    private var session: Session? = null
+
     private val config = activity.config
     private val contentResolver = activity.contentResolver
     private val mainExecutor = ContextCompat.getMainExecutor(activity)
@@ -140,8 +143,6 @@ class CameraXPreview(
     }
 
     private fun startCamera(switching: Boolean = false) {
-        cameraExecutor = Executors.newSingleThreadExecutor()
-
         val cameraProviderFuture = ProcessCameraProvider.getInstance(activity.applicationContext)
         cameraProviderFuture.addListener({
             try {
@@ -181,6 +182,11 @@ class CameraXPreview(
 
         val previewUseCase = buildPreview(rotatedResolution, rotation)
         val captureUseCase = getCaptureUseCase(rotatedResolution, rotation)
+
+        if (config.isArmlEnabled)
+            startSession()
+        else
+            stopSession()
 
         cameraProvider.unbindAll()
         camera = if (isFullSize) {
@@ -238,6 +244,16 @@ class CameraXPreview(
     }
 
     private fun buildAnalyser(): ImageAnalysis {
+        return ImageAnalysis.Builder()
+            .build()
+            .also {
+                it.setAnalyzer(mainExecutor, ARML(session!!))
+            }
+    }
+
+    private fun startSession() {
+        if (session != null) return
+
         // Create a new ARCore session.
         session = Session(this.activity)
 
@@ -248,14 +264,19 @@ class CameraXPreview(
         // support for Augmented Faces.
 
         // Configure the session.
-        session.configure(config)
+        session!!.configure(config)
 
+        Log.d("ImageAnalyser", "Session started")
+    }
 
-        return ImageAnalysis.Builder()
-            .build()
-            .also {
-                it.setAnalyzer(cameraExecutor, ARML())
-            }
+    private fun stopSession() {
+        if (session == null) return
+
+        // TODO: do on background thread
+        session!!.close()
+        session = null
+
+        Log.d("ImageAnalyser", "Session stopped")
     }
 
     private fun buildPreview(resolution: Size, rotation: Int): Preview {
@@ -406,6 +427,7 @@ class CameraXPreview(
             }
             requestLocationUpdates()
         }
+        session?.resume()
     }
 
     private fun requestLocationUpdates() {
@@ -427,10 +449,12 @@ class CameraXPreview(
     override fun onPause(owner: LifecycleOwner) {
         super.onPause(owner)
         simpleLocationManager?.dropLocationUpdates()
+        session?.pause()
     }
 
     override fun onStop(owner: LifecycleOwner) {
         orientationEventListener.disable()
+        session?.pause()
     }
 
     override fun isInPhotoMode(): Boolean {

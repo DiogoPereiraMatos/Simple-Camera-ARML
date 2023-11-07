@@ -1,11 +1,13 @@
-package com.simplemobiletools.camera.helpers
+package com.simplemobiletools.camera.helpers.ai
 
 import android.util.Log
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import com.google.ar.core.Frame
+import com.google.ar.core.Session
 import java.nio.ByteBuffer
 
-class ARML() : ImageAnalysis.Analyzer {
+class ARML(private val session: Session) : ImageAnalysis.Analyzer {
 
     private fun ByteBuffer.toByteArray(): ByteArray {
         rewind()    // Rewind the buffer to zero
@@ -23,5 +25,7 @@ class ARML() : ImageAnalysis.Analyzer {
         Log.d("ImageAnalyser", "Average luminosity: $luma")
 
         image.close()
+
+        //val frame = session.update()
     }
 }
