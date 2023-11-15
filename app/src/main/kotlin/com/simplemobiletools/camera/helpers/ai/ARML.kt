@@ -24,8 +24,11 @@ class ARML(private val session: Session) : ImageAnalysis.Analyzer {
 
         Log.d("ImageAnalyser", "Average luminosity: $luma")
 
-        image.close()
+        // TODO: GL context
+        /*session.resume()
+        val frame = session.update()
+        Log.d("ImageAnalyser", "ARCore Session timestamp: ${frame.timestamp}")*/
 
-        //val frame = session.update()
+        image.close()
     }
 }
