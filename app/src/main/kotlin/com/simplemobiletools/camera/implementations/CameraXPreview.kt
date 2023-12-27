@@ -30,7 +30,7 @@ import com.google.ar.core.Config
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.extensions.*
 import com.simplemobiletools.camera.helpers.*
-import com.simplemobiletools.camera.helpers.ai.ARML
+import com.simplemobiletools.camera.helpers.ar.ARML
 import com.simplemobiletools.camera.interfaces.MyPreview
 import com.simplemobiletools.camera.models.CaptureMode
 import com.simplemobiletools.camera.models.MediaOutput
@@ -41,7 +41,6 @@ import com.simplemobiletools.commons.extensions.toast
 import com.simplemobiletools.commons.helpers.PERMISSION_ACCESS_FINE_LOCATION
 import com.simplemobiletools.commons.helpers.ensureBackgroundThread
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 class CameraXPreview(
     private val activity: BaseSimpleActivity,

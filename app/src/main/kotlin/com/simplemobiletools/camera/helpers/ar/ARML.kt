@@ -1,9 +1,8 @@
-package com.simplemobiletools.camera.helpers.ai
+package com.simplemobiletools.camera.helpers.ar
 
 import android.util.Log
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import com.google.ar.core.Frame
 import com.google.ar.core.Session
 import java.nio.ByteBuffer
 
