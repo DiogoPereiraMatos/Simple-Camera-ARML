@@ -293,7 +293,7 @@ class SettingsActivity : SimpleActivity() {
             when (ArCoreApk.getInstance().requestInstall(this, userRequestedInstall)) {
                 ArCoreApk.InstallStatus.INSTALLED -> {
                     // Success: Safe to create the AR session.
-                    Log.d("SettingsARML", "ARCore installed.")
+                    Log.d("ARML", "ARCore installed.")
                     return true
                 }
                 ArCoreApk.InstallStatus.INSTALL_REQUESTED -> {
@@ -305,7 +305,7 @@ class SettingsActivity : SimpleActivity() {
                     // 4. ARCore resumes this activity. The next invocation of
                     //    requestInstall() will either return `INSTALLED` or throw an
                     //    exception if the installation or update did not succeed.
-                    Log.d("SettingsARML", "Installing ARCore...")
+                    Log.d("ARML", "Installing ARCore...")
                     userRequestedInstall = false
                     return false
                 }
@@ -313,7 +313,7 @@ class SettingsActivity : SimpleActivity() {
         } catch (e: Exception) {
             // Display an appropriate message to the user and return gracefully.
             Toast.makeText(this, "Failed to download required resources. Try again.", Toast.LENGTH_LONG).show()
-            Log.d("SettingsARML", "Failed to download required resources. $e")
+            Log.d("ARML", "Failed to download required resources. $e")
             return false
         }
     }

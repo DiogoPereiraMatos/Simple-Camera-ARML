@@ -10,7 +10,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.provider.MediaStore
-import android.util.Log
 import android.view.*
 import android.widget.LinearLayout
 import androidx.constraintlayout.widget.ConstraintSet
@@ -24,7 +23,6 @@ import com.bumptech.glide.request.RequestOptions
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.tabs.TabLayout
-import com.google.ar.core.Session
 import com.simplemobiletools.camera.BuildConfig
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.databinding.ActivityMainBinding
@@ -69,8 +67,6 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
     private var mIsHardwareShutterHandled = false
     private var mLastHandledOrientation = 0
     private var countDownTimer: CountDownTimer? = null
-
-    private var session: Session? = null
 
     private val tabSelectedListener = object : TabSelectedListener {
         override fun onTabSelected(tab: TabLayout.Tab) {
@@ -120,13 +116,6 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
         }
     }
 
-    private fun setupAR() {
-        if (config.isArmlEnabled)
-            startSession()
-        else
-            stopSession()
-    }
-
     override fun onResume() {
         super.onResume()
         if (hasStorageAndCameraPermissions()) {
@@ -144,7 +133,8 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
         }
 
-        setupAR()
+        if (config.isArmlEnabled)
+            launchARActivity()
     }
 
     override fun onPause() {
@@ -159,52 +149,12 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
         }
 
         mOrientationEventListener.disable()
-
-        pauseSession()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         mPreview = null
         mediaSoundHelper.release()
-
-        pauseSession()
-    }
-
-    private fun startSession() {
-        if (session != null) return
-
-        // Create a new ARCore session.
-        session = Session(this)
-
-        // Create a session config.
-        val config = com.google.ar.core.Config(session)
-
-        // Do feature-specific operations here, such as enabling depth or turning on
-        // support for Augmented Faces.
-
-        // Configure the session.
-        session!!.configure(config)
-
-        Log.d("ARML", "Session started")
-    }
-
-    private fun stopSession() {
-        if (session == null) return
-
-        // TODO: do on background thread
-        session?.close()
-        session = null
-
-        Log.d("ARML", "Session stopped")
-    }
-
-    private fun pauseSession() {
-        if (session == null) return
-
-        session?.pause()
-
-        Log.d("ARML", "Session paused")
     }
 
     override fun onBackPressed() {
@@ -1004,5 +954,10 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
             add(Release(52, R.string.release_52))
             checkWhatsNew(this, BuildConfig.VERSION_CODE)
         }
+    }
+
+    private fun launchARActivity() {
+        val intent = Intent(applicationContext, ArActivity::class.java)
+        startActivity(intent)
     }
 }

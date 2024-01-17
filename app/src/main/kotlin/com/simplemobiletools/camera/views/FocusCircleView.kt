@@ -5,7 +5,6 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.os.Handler
 import android.view.ViewGroup
-import com.simplemobiletools.camera.extensions.config
 import com.simplemobiletools.commons.extensions.getProperPrimaryColor
 
 class FocusCircleView(context: Context) : ViewGroup(context) {

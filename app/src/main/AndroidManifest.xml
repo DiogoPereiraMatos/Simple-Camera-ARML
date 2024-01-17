@@ -119,6 +119,20 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name="com.simplemobiletools.camera.activities.ArActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:screenOrientation="locked"
+            android:parentActivityName=".activities.MainActivity">
+
+            <intent-filter>
+                <action android:name="android.media.action.VIDEO_CAMERA" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <receiver
             android:name=".receivers.HardwareShutterReceiver"
             android:exported="false">

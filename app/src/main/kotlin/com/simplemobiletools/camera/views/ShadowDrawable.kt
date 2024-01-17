@@ -105,7 +105,7 @@ class ShadowDrawable(context: Context, private val drawable: Drawable, @StyleRes
             } else {
                 sharedBitmap = Bitmap.createBitmap(SHARED_BITMAP_BUFFER_SIZE, SHARED_BITMAP_BUFFER_SIZE, Bitmap.Config.ARGB_8888)
                 sharedDrawableBitmapBuffer.set(sharedBitmap)
-                sharedDrawableCanvasBuffer.set(Canvas(sharedBitmap!!))
+                sharedDrawableCanvasBuffer.set(Canvas(sharedBitmap))
             }
             createBitmap = sharedBitmap
             canvas2 = sharedDrawableCanvasBuffer.get()!!
@@ -150,7 +150,7 @@ class ShadowDrawable(context: Context, private val drawable: Drawable, @StyleRes
         outputBufferCanvas!!.drawBitmap(createBitmap, srcRect, destRect, bitmapPaint)
         srcRect[0, 0, unionBounds.width()] = unionBounds.height()
         destRect.set(unionBounds)
-        canvas.drawBitmap(outputBuffer!!, srcRect, destRect, bitmapPaint)
+        canvas.drawBitmap(outputBuffer, srcRect, destRect, bitmapPaint)
     }
 
     @Deprecated("Deprecated in Java", ReplaceWith("PixelFormat.TRANSLUCENT", "android.graphics.PixelFormat"))
