@@ -6,7 +6,6 @@ import android.hardware.SensorManager
 import android.hardware.display.DisplayManager
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.util.Rational
 import android.util.Size
 import android.view.*
@@ -25,7 +24,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.window.layout.WindowMetricsCalculator
 import com.bumptech.glide.load.ImageHeaderParser.UNKNOWN_ORIENTATION
-import com.google.ar.core.Session
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.extensions.*
 import com.simplemobiletools.camera.helpers.*
@@ -38,7 +36,6 @@ import com.simplemobiletools.commons.activities.BaseSimpleActivity
 import com.simplemobiletools.commons.extensions.toast
 import com.simplemobiletools.commons.helpers.PERMISSION_ACCESS_FINE_LOCATION
 import com.simplemobiletools.commons.helpers.ensureBackgroundThread
-import java.util.concurrent.ExecutorService
 
 class CameraXPreview(
     private val activity: BaseSimpleActivity,
@@ -127,9 +124,6 @@ class CameraXPreview(
     private var lastCameraStartTime = 0L
     private var simpleLocationManager: SimpleLocationManager? = null
 
-    private var session: Session? = null
-    private lateinit var cameraExecutor: ExecutorService
-
     init {
         bindToLifeCycle()
     }
@@ -148,55 +142,11 @@ class CameraXPreview(
                 videoQualityManager.initSupportedQualities(provider)
                 bindCameraUseCases()
                 setupCameraObservers()
-                setupAR()
             } catch (e: Exception) {
                 val errorMessage = if (switching) R.string.camera_switch_error else R.string.camera_open_error
                 activity.toast(errorMessage)
             }
         }, mainExecutor)
-    }
-
-    private fun setupAR() {
-        if (config.isArmlEnabled)
-            startSession()
-        else
-            stopSession()
-    }
-
-    private fun startSession() {
-        if (session != null) return
-
-        // Create a new ARCore session.
-        session = Session(this.activity)
-
-        // Create a session config.
-        val config = com.google.ar.core.Config(session)
-
-        // Do feature-specific operations here, such as enabling depth or turning on
-        // support for Augmented Faces.
-
-        // Configure the session.
-        session!!.configure(config)
-
-        Log.d("ARML", "Session started")
-    }
-
-    private fun stopSession() {
-        if (session == null) return
-
-        // TODO: do on background thread
-        session?.close()
-        session = null
-
-        Log.d("ARML", "Session stopped")
-    }
-
-    private fun pauseSession() {
-        if (session == null) return
-
-        session?.pause()
-
-        Log.d("ARML", "Session paused")
     }
 
     private fun bindCameraUseCases() {
@@ -431,12 +381,10 @@ class CameraXPreview(
     override fun onPause(owner: LifecycleOwner) {
         super.onPause(owner)
         simpleLocationManager?.dropLocationUpdates()
-        pauseSession()
     }
 
     override fun onStop(owner: LifecycleOwner) {
         orientationEventListener.disable()
-        pauseSession()
     }
 
     override fun isInPhotoMode(): Boolean {
