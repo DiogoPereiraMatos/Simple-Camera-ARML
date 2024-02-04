@@ -51,7 +51,7 @@ class ArActivity : SimpleActivity() {
 		super.onCreate(savedInstanceState)
 
 		// Setup ARCore session lifecycle helper and configuration.
-		// arCoreSessionHelper = ARCoreSessionLifecycleHelper(this)
+		arCoreSessionHelper = ARCoreSessionLifecycleHelper(this)
 		// If Session creation or Session.resume() fails, display a message and log detailed
 		// information.
 		arCoreSessionHelper.exceptionCallback =
