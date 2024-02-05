@@ -118,6 +118,11 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
 
     override fun onResume() {
         super.onResume()
+
+		if (config.isArmlEnabled) {
+			launchARActivity()
+		}
+
         if (hasStorageAndCameraPermissions()) {
             val isInPhotoMode = isInPhotoMode()
             setupPreviewImage(isInPhotoMode)
@@ -132,9 +137,6 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
         if (ViewCompat.getWindowInsetsController(window.decorView) == null) {
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
         }
-
-        if (config.isArmlEnabled)
-            launchARActivity()
     }
 
     override fun onPause() {
