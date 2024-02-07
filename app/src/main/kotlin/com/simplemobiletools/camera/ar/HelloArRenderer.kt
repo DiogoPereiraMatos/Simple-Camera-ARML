@@ -134,6 +134,16 @@ class HelloArRenderer(val activity: ArActivity) : SampleRender.Renderer, Default
 	val displayRotationHelper = DisplayRotationHelper(activity)
 	val trackingStateHelper = TrackingStateHelper(activity)
 
+	var objectHasChanged = false
+	var virtualObjectName:String = "pawn"
+		set(value) {
+			if (field != value) {
+				field = value
+				objectHasChanged = true
+				Log.d(TAG, "Set $value")
+			}
+		}
+
 	override fun onResume(owner: LifecycleOwner) {
 		displayRotationHelper.onResume()
 		hasSetTextureNames = false
@@ -201,11 +211,21 @@ class HelloArRenderer(val activity: ArActivity) : SampleRender.Renderer, Default
 			val pointCloudVertexBuffers = arrayOf(pointCloudVertexBuffer)
 			pointCloudMesh = Mesh(render, Mesh.PrimitiveMode.POINTS, /*indexBuffer=*/ null, pointCloudVertexBuffers)
 
-			// Virtual object to render (ARCore pawn)
+			loadVirtualObject(render)
+
+		} catch (e: IOException) {
+			Log.e(TAG, "Failed to read a required asset file", e)
+			showError("Failed to read a required asset file: $e")
+		}
+	}
+
+	private fun loadVirtualObject(render: SampleRender) {
+		try {
+			// Virtual object to render
 			virtualObjectAlbedoTexture =
 				Texture.createFromAsset(
 					render,
-					"models/pawn_albedo.png",
+					"models/${virtualObjectName}/albedo.png",
 					Texture.WrapMode.CLAMP_TO_EDGE,
 					Texture.ColorFormat.SRGB
 				)
@@ -213,7 +233,7 @@ class HelloArRenderer(val activity: ArActivity) : SampleRender.Renderer, Default
 			virtualObjectAlbedoInstantPlacementTexture =
 				Texture.createFromAsset(
 					render,
-					"models/pawn_albedo_instant_placement.png",
+					"models/${virtualObjectName}/albedo_instant_placement.png",
 					Texture.WrapMode.CLAMP_TO_EDGE,
 					Texture.ColorFormat.SRGB
 				)
@@ -221,11 +241,11 @@ class HelloArRenderer(val activity: ArActivity) : SampleRender.Renderer, Default
 			val virtualObjectPbrTexture =
 				Texture.createFromAsset(
 					render,
-					"models/pawn_roughness_metallic_ao.png",
+					"models/${virtualObjectName}/roughness_metallic_ao.png",
 					Texture.WrapMode.CLAMP_TO_EDGE,
 					Texture.ColorFormat.LINEAR
 				)
-			virtualObjectMesh = Mesh.createFromAsset(render, "models/pawn.obj")
+			virtualObjectMesh = Mesh.createFromAsset(render, "models/${virtualObjectName}/${virtualObjectName}.obj")
 			virtualObjectShader =
 				Shader.createFromAssets(
 					render,
@@ -241,6 +261,8 @@ class HelloArRenderer(val activity: ArActivity) : SampleRender.Renderer, Default
 			Log.e(TAG, "Failed to read a required asset file", e)
 			showError("Failed to read a required asset file: $e")
 		}
+		objectHasChanged = false
+		Log.d(TAG, "Loaded $virtualObjectName")
 	}
 
 	override fun onSurfaceChanged(render: SampleRender, width: Int, height: Int) {
@@ -250,6 +272,8 @@ class HelloArRenderer(val activity: ArActivity) : SampleRender.Renderer, Default
 
 	override fun onDrawFrame(render: SampleRender) {
 		val session = session ?: return
+
+		if (objectHasChanged) loadVirtualObject(render)
 
 		// Texture names should only be set once on a GL thread unless they change. This is done during
 		// onDrawFrame rather than onSurfaceCreated since the session is not guaranteed to have been

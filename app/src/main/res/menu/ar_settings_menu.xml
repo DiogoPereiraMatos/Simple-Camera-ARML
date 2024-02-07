@@ -17,7 +17,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-  <item android:id="@+id/depth_settings" android:title="Depth API"/>
+	<item android:id="@+id/depth_settings" android:title="Depth API"/>
   <item android:id="@+id/instant_placement_settings"
       android:title="Instant Placement"/>
+	<item
+		android:id="@+id/model_settings"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:title="Model" />
 </menu>

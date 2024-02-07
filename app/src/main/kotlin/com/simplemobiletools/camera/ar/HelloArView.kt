@@ -15,8 +15,10 @@
  */
 package com.simplemobiletools.camera.ar
 
+import android.content.DialogInterface
 import android.content.res.Resources
 import android.opengl.GLSurfaceView
+import android.util.Log
 import android.view.View
 import android.widget.ImageButton
 import android.widget.PopupMenu
@@ -48,6 +50,7 @@ class HelloArView(val activity: ArActivity) : DefaultLifecycleObserver {
 						when (item.itemId) {
 							R.id.depth_settings -> launchDepthSettingsMenuDialog()
 							R.id.instant_placement_settings -> launchInstantPlacementSettingsMenuDialog()
+							R.id.model_settings -> launchModelSettingsMenuDialog()
 							else -> null
 						} != null
 					}
@@ -135,6 +138,14 @@ class HelloArView(val activity: ArActivity) : DefaultLifecycleObserver {
 				.setPositiveButton(R.string.done) { _, _ -> /* No settings to apply. */ }
 					.show()
 		}
+	}
+
+	private fun launchModelSettingsMenuDialog() {
+		val models = arrayOf("pawn", "apple")
+		AlertDialog.Builder(activity)
+			.setTitle("Model")
+			.setSingleChoiceItems(models, models.indexOf(activity.renderer.virtualObjectName)) { _, which -> activity.renderer.virtualObjectName = models[which] }
+			.show()
 	}
 
 	private fun launchSettings() = activity.launchSettings()

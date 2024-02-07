@@ -6,6 +6,7 @@ import androidx.camera.core.CameraState
 import androidx.camera.core.ImageCapture
 import androidx.camera.video.VideoRecordEvent
 import com.simplemobiletools.camera.R
+import com.simplemobiletools.camera.extensions.config
 import com.simplemobiletools.commons.extensions.toast
 
 class CameraErrorHandler(
@@ -15,7 +16,7 @@ class CameraErrorHandler(
     fun handleCameraError(error: CameraState.StateError?) {
         when (error?.code) {
             CameraState.ERROR_MAX_CAMERAS_IN_USE,
-            CameraState.ERROR_CAMERA_IN_USE -> context.toast(R.string.camera_in_use_error, Toast.LENGTH_LONG)
+            CameraState.ERROR_CAMERA_IN_USE -> if (!context.config.isArmlEnabled) context.toast(R.string.camera_in_use_error, Toast.LENGTH_LONG)
             CameraState.ERROR_CAMERA_FATAL_ERROR -> context.toast(R.string.camera_unavailable)
             CameraState.ERROR_STREAM_CONFIG -> context.toast(R.string.camera_configure_error)
             CameraState.ERROR_CAMERA_DISABLED -> context.toast(R.string.camera_disabled_by_admin_error)
