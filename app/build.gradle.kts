@@ -94,6 +94,14 @@ dependencies {
     implementation(libs.androidx.exifinterface)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.window)
+
+	// ARCore
     implementation(libs.core)
     implementation(libs.obj)
+
+	// XML/ARML Parser
+	// https://mvnrepository.com/artifact/org.simpleframework/simple-xml
+	implementation("org.simpleframework:simple-xml:2.7.1")
+	// https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api
+	implementation("javax.xml.bind:jaxb-api:2.3.1")
 }
