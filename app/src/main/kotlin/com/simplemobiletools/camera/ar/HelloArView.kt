@@ -141,7 +141,7 @@ class HelloArView(val activity: ArActivity) : DefaultLifecycleObserver {
 	}
 
 	private fun launchModelSettingsMenuDialog() {
-		val models = arrayOf("pawn", "apple")
+		val models = arrayOf("pawn", "apple", "cube", "ball")
 		AlertDialog.Builder(activity)
 			.setTitle("Model")
 			.setSingleChoiceItems(models, models.indexOf(activity.renderer.virtualObjectName)) { _, which -> activity.renderer.virtualObjectName = models[which] }
