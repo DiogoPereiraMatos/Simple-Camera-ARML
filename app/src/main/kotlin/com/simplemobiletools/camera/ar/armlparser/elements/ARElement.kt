@@ -2,13 +2,16 @@ package com.simplemobiletools.camera.ar.armlparser.elements
 
 import org.simpleframework.xml.Attribute
 
-
+//REQ: http://www.opengis.net/spec/arml/2.0/req/model/ARElement/interface
 abstract class ARElement {
 
-	@field:Attribute(name = "id")
-	lateinit var id : String
+	//REQ: http://www.opengis.net/spec/arml/2.0/req/model/ARElement/id
+	@field:Attribute(name = "id", required = false)
+	var id: String? = null
 
 	override fun toString(): String {
-		return "ARElement(id=$id)"
+		return "${this::class.simpleName}(id=\"$id\")"
 	}
+
+	abstract fun validate(): Pair<Boolean, String>
 }
