@@ -25,6 +25,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.window.layout.WindowMetricsCalculator
 import com.bumptech.glide.load.ImageHeaderParser.UNKNOWN_ORIENTATION
 import com.simplemobiletools.camera.R
+import com.simplemobiletools.camera.ar.qr.CameraXAnalyzer
 import com.simplemobiletools.camera.extensions.*
 import com.simplemobiletools.camera.helpers.*
 import com.simplemobiletools.camera.interfaces.MyPreview
@@ -172,6 +173,7 @@ class CameraXPreview(
 
         val previewUseCase = buildPreview(rotatedResolution, rotation)
         val captureUseCase = getCaptureUseCase(rotatedResolution, rotation)
+		val analyzeUseCase = ImageAnalysis.Builder().build().also { it.setAnalyzer(mainExecutor, CameraXAnalyzer()) }
 
         cameraProvider.unbindAll()
         camera = if (isFullSize) {
@@ -183,6 +185,7 @@ class CameraXPreview(
             val useCaseGroup = UseCaseGroup.Builder()
                 .addUseCase(previewUseCase)
                 .addUseCase(captureUseCase)
+				.addUseCase(analyzeUseCase)
                 .setViewPort(viewPort)
                 .build()
 
@@ -197,6 +200,7 @@ class CameraXPreview(
                 cameraSelector,
                 previewUseCase,
                 captureUseCase,
+				analyzeUseCase,
             )
         }
         preview = previewUseCase

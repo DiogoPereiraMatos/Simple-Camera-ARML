@@ -95,13 +95,14 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.window)
 
+	// QR reading
+	implementation("com.google.mlkit:barcode-scanning:17.2.0")
+	implementation("com.google.zxing:core:3.5.3")
+
 	// ARCore
     implementation(libs.core)
     implementation(libs.obj)
 
 	// XML/ARML Parser
-	// https://mvnrepository.com/artifact/org.simpleframework/simple-xml
 	implementation("org.simpleframework:simple-xml:2.7.1")
-	// https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api
-	implementation("javax.xml.bind:jaxb-api:2.3.1")
 }
