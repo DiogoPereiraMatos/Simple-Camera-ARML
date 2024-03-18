@@ -26,6 +26,7 @@ import androidx.window.layout.WindowMetricsCalculator
 import com.bumptech.glide.load.ImageHeaderParser.UNKNOWN_ORIENTATION
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.ar.qr.CameraXAnalyzer
+import com.simplemobiletools.camera.ar.qr.QRBoxView
 import com.simplemobiletools.camera.extensions.*
 import com.simplemobiletools.camera.helpers.*
 import com.simplemobiletools.camera.interfaces.MyPreview
@@ -47,6 +48,7 @@ class CameraXPreview(
     private val listener: CameraXPreviewListener,
     private val isThirdPartyIntent: Boolean,
     initInPhotoMode: Boolean,
+	private val mQRBoxView: QRBoxView
 ) : MyPreview, DefaultLifecycleObserver {
 
     companion object {
@@ -173,7 +175,7 @@ class CameraXPreview(
 
         val previewUseCase = buildPreview(rotatedResolution, rotation)
         val captureUseCase = getCaptureUseCase(rotatedResolution, rotation)
-		val analyzeUseCase = ImageAnalysis.Builder().build().also { it.setAnalyzer(mainExecutor, CameraXAnalyzer()) }
+        val analyzeUseCase = ImageAnalysis.Builder().build().also { it.setAnalyzer(mainExecutor, CameraXAnalyzer(mQRBoxView)) }
 
         cameraProvider.unbindAll()
         camera = if (isFullSize) {

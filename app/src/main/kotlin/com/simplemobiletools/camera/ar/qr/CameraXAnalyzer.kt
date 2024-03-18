@@ -1,5 +1,6 @@
 package com.simplemobiletools.camera.ar.qr
 
+import android.graphics.Point
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
@@ -13,13 +14,20 @@ import com.google.zxing.BinaryBitmap
 import com.google.zxing.NotFoundException
 import com.google.zxing.Result
 import com.google.zxing.qrcode.QRCodeReader
+import com.simplemobiletools.camera.ar.arml.ARMLParser
+import com.simplemobiletools.camera.ar.arml.elements.ARML
+import org.xml.sax.InputSource
+import java.net.URL
+import javax.xml.parsers.DocumentBuilderFactory
 
-class CameraXAnalyzer() : ImageAnalysis.Analyzer {
+class CameraXAnalyzer(
+	val view : QRBoxView
+) : ImageAnalysis.Analyzer {
 
 	private val options = BarcodeScannerOptions.Builder()
 		.setBarcodeFormats(
 			Barcode.FORMAT_QR_CODE,
-			Barcode.FORMAT_AZTEC)
+			)
 		.build()
 
 	private val scanner = BarcodeScanning.getClient(options)
@@ -43,7 +51,12 @@ class CameraXAnalyzer() : ImageAnalysis.Analyzer {
 			val result = scanner.process(image)
 				.addOnSuccessListener { barcodes ->
 					// Task completed successfully
-					processBarcodes(barcodes)
+					if (barcodes.isEmpty()) {
+						//view.toggleBox(false)
+					} else {
+						processBarcodes(barcodes)
+						view.drawQRBox(barcodes.first(), image.width, image.height)
+					}
 				}
 				.addOnFailureListener {
 					// Task failed with an exception
@@ -56,11 +69,6 @@ class CameraXAnalyzer() : ImageAnalysis.Analyzer {
 
 	private fun processBarcodes(barcodes : List<Barcode>) {
 		for (barcode in barcodes) {
-
-			val bounds = barcode.boundingBox
-			val corners = barcode.cornerPoints
-
-			val rawValue = barcode.rawValue
 
 			// See API reference for complete list of supported types
 			when (barcode.valueType) {
@@ -76,14 +84,41 @@ class CameraXAnalyzer() : ImageAnalysis.Analyzer {
 					Log.d("CameraXAnalyzer", "URL: $url")
 				}
 				Barcode.TYPE_TEXT -> {
+					val rawValue = barcode.rawValue
+
 					if (rawValue?.startsWith("arml://", ignoreCase = true) == true) {
 						val url = rawValue.substringAfter("arml://")
 						Log.d("CameraXAnalyzer", "ARML: $url")
+
+						try {
+							val builderFactory = DocumentBuilderFactory.newInstance()
+							val docBuilder = builderFactory.newDocumentBuilder()
+							val doc = docBuilder.parse(InputSource(URL("http://" + url).openStream()))
+							val arml: ARML? = ARMLParser().loads(doc.textContent)
+							if (arml == null) {
+								Log.d("CameraXAnalyzer", "Invalid ARML!")
+								break
+							}
+
+							val validation = arml.validate()
+							if (!validation.first) {
+								Log.d("CameraXAnalyzer", "Invalid ARML (${validation.second})!")
+								break
+							}
+
+							Log.d("CameraXAnalyzer", arml.toString())
+							
+						} catch (e : Exception) {
+							Log.d("CameraXAnalyzer", "Failed to read ARML!")
+							break
+						}
+
 					} else {
 						Log.d("CameraXAnalyzer", "TEXT: $rawValue")
 					}
 				}
 				else -> {
+					val rawValue = barcode.rawValue
 					Log.d("CameraXAnalyzer", "UNKNOWN: $rawValue")
 				}
 			}

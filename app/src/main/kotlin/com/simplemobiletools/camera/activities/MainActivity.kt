@@ -25,6 +25,7 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.tabs.TabLayout
 import com.simplemobiletools.camera.BuildConfig
 import com.simplemobiletools.camera.R
+import com.simplemobiletools.camera.ar.qr.QRBoxView
 import com.simplemobiletools.camera.databinding.ActivityMainBinding
 import com.simplemobiletools.camera.extensions.config
 import com.simplemobiletools.camera.extensions.fadeIn
@@ -60,6 +61,7 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
     private lateinit var timerScene: Scene
     private lateinit var mOrientationEventListener: OrientationEventListener
     private lateinit var mFocusCircleView: FocusCircleView
+	private lateinit var mQRBoxView : QRBoxView
     private lateinit var mediaSoundHelper: MediaSoundHelper
     private var mPreview: MyPreview? = null
     private var mediaSizeToggleGroup: MaterialButtonToggleGroup? = null
@@ -119,7 +121,7 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
     override fun onResume() {
         super.onResume()
 
-		if (config.isArmlEnabled) {
+        if (config.isArmlEnabled) {
 			launchARActivity()
 		}
 
@@ -328,6 +330,11 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
             selectVideoTab()
         }
 
+		mQRBoxView = QRBoxView(this).apply {
+			id = View.generateViewId()
+		}
+		binding.viewHolder.addView(mQRBoxView)
+
         val outputUri = intent.extras?.get(MediaStore.EXTRA_OUTPUT) as? Uri
         val isThirdPartyIntent = isThirdPartyIntent()
         mPreview = CameraXInitializer(this).createCameraXPreview(
@@ -337,6 +344,7 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
             outputUri = outputUri,
             isThirdPartyIntent = isThirdPartyIntent,
             initInPhotoMode = isInPhotoMode,
+			mQRBoxView = mQRBoxView
         )
 
         mFocusCircleView = FocusCircleView(this).apply {
