@@ -175,7 +175,9 @@ class CameraXPreview(
 
         val previewUseCase = buildPreview(rotatedResolution, rotation)
         val captureUseCase = getCaptureUseCase(rotatedResolution, rotation)
-        val analyzeUseCase = ImageAnalysis.Builder().build().also { it.setAnalyzer(mainExecutor, CameraXAnalyzer(mQRBoxView)) }
+        val analyzeUseCase = ImageAnalysis.Builder()
+			.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+			.build().also { it.setAnalyzer(mainExecutor, CameraXAnalyzer(activity, mQRBoxView)) }
 
         cameraProvider.unbindAll()
         camera = if (isFullSize) {

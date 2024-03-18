@@ -8,6 +8,16 @@ import org.simpleframework.xml.strategy.TreeStrategy
 
 class ARMLParser {
 
+	companion object {
+		const val EMPTY = """
+			<arml xmlns="http://www.opengis.net/arml/2.0" 
+				xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"> 
+				<ARElements>
+				</ARElements>
+			</arml>
+		"""
+	}
+
 	private val serializer: Serializer = Persister(AnnotationStrategy(TreeStrategy()))
 
 	fun loads(xml: String): ARML? {

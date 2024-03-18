@@ -1,11 +1,15 @@
 package com.simplemobiletools.camera.ar.qr
 
+import android.content.Context
+import android.content.Intent
+import android.content.res.AssetManager
 import android.graphics.Point
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import androidx.core.content.ContextCompat.startActivity
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -14,13 +18,17 @@ import com.google.zxing.BinaryBitmap
 import com.google.zxing.NotFoundException
 import com.google.zxing.Result
 import com.google.zxing.qrcode.QRCodeReader
+import com.simplemobiletools.camera.activities.ArActivity
+import com.simplemobiletools.camera.activities.SettingsActivity
 import com.simplemobiletools.camera.ar.arml.ARMLParser
 import com.simplemobiletools.camera.ar.arml.elements.ARML
 import org.xml.sax.InputSource
+import java.io.File
 import java.net.URL
 import javax.xml.parsers.DocumentBuilderFactory
 
 class CameraXAnalyzer(
+	val context : Context,
 	val view : QRBoxView
 ) : ImageAnalysis.Analyzer {
 
@@ -91,10 +99,14 @@ class CameraXAnalyzer(
 						Log.d("CameraXAnalyzer", "ARML: $url")
 
 						try {
+							/*
 							val builderFactory = DocumentBuilderFactory.newInstance()
 							val docBuilder = builderFactory.newDocumentBuilder()
 							val doc = docBuilder.parse(InputSource(URL("http://" + url).openStream()))
-							val arml: ARML? = ARMLParser().loads(doc.textContent)
+							val armlContent = doc.textContent
+							 */
+							val armlContent = context.assets.open("armlexamples/$url").readBytes().decodeToString()
+							val arml: ARML? = ARMLParser().loads(armlContent)
 							if (arml == null) {
 								Log.d("CameraXAnalyzer", "Invalid ARML!")
 								break
@@ -107,9 +119,10 @@ class CameraXAnalyzer(
 							}
 
 							Log.d("CameraXAnalyzer", arml.toString())
+							launchARActivity(armlContent)
 							
 						} catch (e : Exception) {
-							Log.d("CameraXAnalyzer", "Failed to read ARML!")
+							Log.e("CameraXAnalyzer", "Failed to read ARML!", e)
 							break
 						}
 
@@ -123,5 +136,11 @@ class CameraXAnalyzer(
 				}
 			}
 		}
+	}
+
+	private fun launchARActivity(armlContent : String) {
+		val intent = Intent(context, ArActivity::class.java)
+		intent.putExtra("armlContent", armlContent)
+		context.startActivity(intent)
 	}
 }

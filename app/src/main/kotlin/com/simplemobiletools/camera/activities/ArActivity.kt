@@ -25,6 +25,8 @@ import com.google.ar.core.Session
 import com.google.ar.core.exceptions.*
 import com.simplemobiletools.camera.ar.HelloArRenderer
 import com.simplemobiletools.camera.ar.HelloArView
+import com.simplemobiletools.camera.ar.arml.ARMLParser
+import com.simplemobiletools.camera.ar.arml.elements.ARML
 import com.simplemobiletools.camera.ar.helpers.*
 import com.simplemobiletools.camera.ar.samplerender.SampleRender
 import com.simplemobiletools.camera.extensions.config
@@ -47,8 +49,16 @@ class ArActivity : SimpleActivity() {
 	val instantPlacementSettings = InstantPlacementSettings()
 	val depthSettings = DepthSettings()
 
+	lateinit var armlContent : String
+	lateinit var arml : ARML
+
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+
+		armlContent = this.intent.getStringExtra("armlContent") ?: ARMLParser.EMPTY
+		arml = ARMLParser().loads(armlContent)!!
+		Log.d(TAG, "ArActivity started with ARML: $arml")
+
 
 		// Setup ARCore session lifecycle helper and configuration.
 		arCoreSessionHelper = ARCoreSessionLifecycleHelper(this)

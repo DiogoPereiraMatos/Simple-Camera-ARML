@@ -1,0 +1,21 @@
+<arml xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<ARElements>
+		<Feature id="myFeature">
+			<name>My first Feature</name>
+			<anchors>
+			</anchors>
+		</Feature>
+	</ARElements>
+
+	<style type="text/css">
+		<![CDATA[
+			… CSS style definitions of any Visual Assets
+		]]>
+	</style>
+
+	<script type="text/ecmascript">  <!--might also be javascript and other derivatives -->
+		<![CDATA[
+			… ECMAScript goes here …
+		]]>
+	</script>
+</arml>
