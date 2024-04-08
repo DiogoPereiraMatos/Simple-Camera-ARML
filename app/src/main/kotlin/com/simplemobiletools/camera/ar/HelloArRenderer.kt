@@ -47,12 +47,12 @@ import com.simplemobiletools.camera.ar.samplerender.arcore.SpecularCubemapFilter
 import com.google.ar.core.exceptions.CameraNotAvailableException
 import com.google.ar.core.exceptions.NotYetAvailableException
 import com.simplemobiletools.camera.R
-import com.simplemobiletools.camera.activities.ArActivity
+import com.simplemobiletools.camera.activities.ARCoreActivity
 import java.io.IOException
 import java.nio.ByteBuffer
 
 /** Renders the HelloAR application using our example Renderer. */
-class HelloArRenderer(val activity: ArActivity) : SampleRender.Renderer, DefaultLifecycleObserver {
+class HelloArRenderer(val activity: ARCoreActivity) : SampleRender.Renderer, DefaultLifecycleObserver {
 	companion object {
 		val TAG = "ARML"
 

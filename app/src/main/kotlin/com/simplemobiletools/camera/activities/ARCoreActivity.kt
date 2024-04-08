@@ -37,7 +37,7 @@ import com.simplemobiletools.camera.extensions.config
  * ARCore API. The application will display any detected planes and will allow the user to tap on a
  * plane to place a 3D model.
  */
-class ArActivity : SimpleActivity() {
+class ARCoreActivity : SimpleActivity() {
 	companion object {
 		val TAG = "ARML"
 	}

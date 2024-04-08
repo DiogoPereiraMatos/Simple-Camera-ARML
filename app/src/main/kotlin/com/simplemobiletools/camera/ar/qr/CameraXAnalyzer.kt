@@ -2,14 +2,11 @@ package com.simplemobiletools.camera.ar.qr
 
 import android.content.Context
 import android.content.Intent
-import android.content.res.AssetManager
-import android.graphics.Point
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import androidx.core.content.ContextCompat.startActivity
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
@@ -18,14 +15,9 @@ import com.google.zxing.BinaryBitmap
 import com.google.zxing.NotFoundException
 import com.google.zxing.Result
 import com.google.zxing.qrcode.QRCodeReader
-import com.simplemobiletools.camera.activities.ArActivity
-import com.simplemobiletools.camera.activities.SettingsActivity
+import com.simplemobiletools.camera.activities.ARCoreActivity
 import com.simplemobiletools.camera.ar.arml.ARMLParser
 import com.simplemobiletools.camera.ar.arml.elements.ARML
-import org.xml.sax.InputSource
-import java.io.File
-import java.net.URL
-import javax.xml.parsers.DocumentBuilderFactory
 
 class CameraXAnalyzer(
 	val context : Context,
@@ -139,7 +131,7 @@ class CameraXAnalyzer(
 	}
 
 	private fun launchARActivity(armlContent : String) {
-		val intent = Intent(context, ArActivity::class.java)
+		val intent = Intent(context, ARCoreActivity::class.java)
 		intent.putExtra("armlContent", armlContent)
 		context.startActivity(intent)
 	}

@@ -15,10 +15,8 @@
  */
 package com.simplemobiletools.camera.ar
 
-import android.content.DialogInterface
 import android.content.res.Resources
 import android.opengl.GLSurfaceView
-import android.util.Log
 import android.view.View
 import android.widget.ImageButton
 import android.widget.PopupMenu
@@ -27,17 +25,17 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.google.ar.core.Config
 import com.simplemobiletools.camera.R
-import com.simplemobiletools.camera.activities.ArActivity
+import com.simplemobiletools.camera.activities.ARCoreActivity
 import com.simplemobiletools.camera.ar.helpers.SnackbarHelper
 import com.simplemobiletools.camera.ar.helpers.TapHelper
 
 /** Contains UI elements for Hello AR. */
-class HelloArView(val activity: ArActivity) : DefaultLifecycleObserver {
+class HelloArView(val activity: ARCoreActivity) : DefaultLifecycleObserver {
 	companion object {
 		val TAG = "ARML"
 	}
 
-	val root = View.inflate(activity, R.layout.activity_ar, null)
+	val root = View.inflate(activity, R.layout.activity_arcore, null)
 	val surfaceView = root.findViewById<GLSurfaceView>(R.id.surfaceview)
 	val settingsButton = root.findViewById<ImageButton>(R.id.settings_button).apply {
 		setOnClickListener { launchSettings() }

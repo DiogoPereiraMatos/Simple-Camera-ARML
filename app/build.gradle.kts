@@ -96,13 +96,16 @@ dependencies {
     implementation(libs.androidx.window)
 
 	// QR reading
-	implementation("com.google.mlkit:barcode-scanning:17.2.0")
-	implementation("com.google.zxing:core:3.5.3")
-
-	// ARCore
-    implementation(libs.core)
-    implementation(libs.obj)
+	implementation(libs.barcode.scanning)
+	implementation(libs.zxing.core)
 
 	// XML/ARML Parser
-	implementation("org.simpleframework:simple-xml:2.7.1")
+	implementation(libs.simple.xml)
+
+	// ARCore
+    //implementation(libs.core)
+    implementation(libs.obj)
+	// vv Sceneview vv
+	//implementation(libs.sceneview)
+	implementation(libs.arsceneview)
 }
