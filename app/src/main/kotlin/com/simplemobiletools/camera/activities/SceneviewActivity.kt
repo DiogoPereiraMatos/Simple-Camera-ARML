@@ -2,10 +2,13 @@ package com.simplemobiletools.camera.activities
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import android.widget.PopupMenu
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.*
 import androidx.lifecycle.lifecycleScope
@@ -13,6 +16,12 @@ import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Plane
 import com.google.ar.core.TrackingFailureReason
+import com.simplemobiletools.camera.R
+import com.simplemobiletools.camera.ar.arml.ARMLParser
+import com.simplemobiletools.camera.ar.arml.elements.ARElement
+import com.simplemobiletools.camera.ar.arml.elements.ARML
+import com.simplemobiletools.camera.ar.arml.elements.Feature
+import com.simplemobiletools.camera.ar.arml.elements.ScreenAnchor
 import com.simplemobiletools.camera.databinding.ActivitySceneviewBinding
 import com.simplemobiletools.camera.extensions.config
 import com.simplemobiletools.commons.extensions.navigationBarHeight
@@ -23,11 +32,33 @@ import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.math.Position
 import io.github.sceneview.node.ModelNode
 import kotlinx.coroutines.launch
+import java.util.ArrayList
 
 
 class SceneviewActivity : SimpleActivity() {
 
+	companion object val TAG = "ARML"
+
 	private val binding by viewBinding(ActivitySceneviewBinding::inflate)
+
+	val arml : ARML = ARMLParser().loads(
+		"""
+			<arml xmlns="http://www.opengis.net/arml/2.0" 
+				xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"> 
+				<ARElements>
+				</ARElements>
+			</arml>
+		""".trimIndent()
+	) ?: ARML()
+
+	var virtualObjectName : String = "models/damaged_helmet.glb"
+		set(value) {
+			if (field != value)
+				updateSceneRequested = true
+				Log.d(TAG, "Set $value")
+			field = value
+		}
+	var updateSceneRequested : Boolean = false
 
 	var isLoading = false
 		set(value) {
@@ -86,6 +117,10 @@ class SceneviewActivity : SimpleActivity() {
 				topMargin = safeInsetTop
 			}
 
+			binding.arSettingsButton.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+				topMargin = safeInsetTop
+			}
+
 			val marginBottom = safeInsetBottom + navigationBarHeight + resources.getDimensionPixelSize(com.simplemobiletools.commons.R.dimen.bigger_margin)
 
 			WindowInsetsCompat.CONSUMED
@@ -124,7 +159,8 @@ class SceneviewActivity : SimpleActivity() {
 	}
 
 	private fun setupSceneView() {
-		binding.sceneView.apply {
+		val sceneView = binding.sceneView
+		sceneView.apply {
 			planeRenderer.isEnabled = true
 			configureSession { session, config ->
 				config.depthMode = when (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
@@ -141,10 +177,34 @@ class SceneviewActivity : SimpleActivity() {
 						?.let { plane ->
 							addAnchorNode(plane.createAnchor(plane.centerPose))
 						}
+				} else {
+					if (updateSceneRequested) {
+						anchorNode?.clearChildNodes()
+						anchorNode?.apply { loadAndAddChildNode(this) }
+						updateSceneRequested = false
+					}
 				}
 			}
 			onTrackingFailureChanged = { reason ->
 				this@SceneviewActivity.trackingFailureReason = reason
+			}
+		}
+
+		// ARML
+		sceneView.apply {
+			val arElements : List<ARElement> = arml.elements.elements
+
+			for (element in arElements)
+			{
+				if (element is Feature)
+				{
+					continue
+				}
+
+				if (element is ScreenAnchor)
+				{
+					element.assets.labels
+				}
 			}
 		}
 	}
@@ -153,6 +213,51 @@ class SceneviewActivity : SimpleActivity() {
 		binding.settings.setOnClickListener {
 			launchSettings()
 		}
+		binding.arSettingsButton.setOnClickListener { v ->
+			PopupMenu(this, v).apply {
+				setOnMenuItemClickListener { item ->
+					when (item.itemId) {
+						R.id.model_settings -> launchModelSettingsMenuDialog()
+						else -> null
+					} != null
+				}
+				inflate(R.menu.model_settings_menu)
+				show()
+			}
+		}
+	}
+
+	private fun listAssets(path: String): ArrayList<String>? {
+
+		val file_or_folder = assets.list(path)!!
+		if (file_or_folder.isEmpty())
+			return null
+
+		val all_assets = ArrayList<String>()
+		for (f in file_or_folder) {
+			val recursive = listAssets("$path/$f")
+			if (recursive != null) {
+				// is folder
+				all_assets.addAll(recursive)
+			} else {
+				// is file
+				all_assets.add("$path/$f")
+			}
+		}
+		return all_assets
+	}
+
+	private fun launchModelSettingsMenuDialog() {
+		val models = listAssets("models")!!.filter { filename ->
+			filename.endsWith(".glb", true)
+				||
+				filename.endsWith(".gltf", true)
+		}.toTypedArray()
+
+		AlertDialog.Builder(this)
+			.setTitle("Model")
+			.setSingleChoiceItems(models, models.indexOf(virtualObjectName)) { _, which -> virtualObjectName = models[which] }
+			.show()
 	}
 
 	fun addAnchorNode(anchor: Anchor) {
@@ -160,29 +265,35 @@ class SceneviewActivity : SimpleActivity() {
 		sceneView.addChildNode(
 			AnchorNode(sceneView.engine, anchor)
 				.apply {
-					isEditable = true
-					lifecycleScope.launch {
-						isLoading = true
-						sceneView.modelLoader.loadModelInstance(
-							"models/damaged_helmet.glb"
-						)?.let { modelInstance ->
-							addChildNode(
-								ModelNode(
-									modelInstance = modelInstance,
-									// Scale to fit in a 0.5 meters cube
-									scaleToUnits = 0.5f,
-									// Bottom origin instead of center so the model base is on floor
-									centerOrigin = Position(y = -0.5f)
-								).apply {
-									isEditable = true
-								}
-							)
-						}
-						isLoading = false
-					}
+					loadAndAddChildNode(this)
 					anchorNode = this
 				}
 		)
+	}
+
+	fun loadAndAddChildNode(anchor: AnchorNode) {
+		val sceneView = binding.sceneView
+		anchor.apply {
+			isEditable = true
+			lifecycleScope.launch {
+				isLoading = true
+				sceneView.modelLoader.loadModelInstance(
+					virtualObjectName
+				)?.let { modelInstance ->
+					val modelNode = ModelNode(
+						modelInstance = modelInstance,
+						// Scale to fit in a 0.5 meters cube
+						scaleToUnits = 0.5f,
+						// Bottom origin instead of center so the model base is on floor
+						centerOrigin = Position(y = -0.5f)
+					).apply {
+						isEditable = true
+					}
+					addChildNode(modelNode)
+				}
+				isLoading = false
+			}
+		}
 	}
 
 	fun launchSettings() {

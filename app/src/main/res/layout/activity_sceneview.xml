@@ -35,6 +35,39 @@
 			app:trackColor="#3FFFFFFF" />
 	</FrameLayout>
 
+	<ImageButton
+		android:id="@+id/settings"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="24dp"
+		android:layout_marginEnd="24dp"
+		android:layout_marginBottom="24dp"
+		android:layout_marginStart="24dp"
+		android:background="@android:color/transparent"
+		android:importantForAccessibility="no"
+		android:padding="24dp"
+		android:src="@drawable/ic_settings_vector"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintTop_toTopOf="parent" />
+
+	<ImageButton
+		android:id="@+id/ar_settings_button"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_marginTop="24dp"
+		android:layout_marginEnd="24dp"
+		android:layout_marginBottom="24dp"
+		android:layout_marginStart="24dp"
+		android:background="@android:color/transparent"
+		android:scaleType="centerInside"
+		android:importantForAccessibility="no"
+		android:padding="24dp"
+		android:src="@drawable/ic_ar_launcher"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintTop_toTopOf="parent"
+		app:layout_constraintEnd_toStartOf="@id/settings"
+		android:translationX="24dp"/>
+
 	<TextView
 		android:id="@+id/instructionText"
 		android:layout_width="0dp"
@@ -52,18 +85,5 @@
 		app:layout_constraintLeft_toLeftOf="parent"
 		app:layout_constraintRight_toRightOf="parent"
 		app:layout_constraintTop_toBottomOf="@id/settings" />
-
-	<ImageButton
-		android:id="@+id/settings"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:layout_marginTop="24dp"
-		android:layout_marginEnd="24dp"
-		android:background="@android:color/transparent"
-		android:importantForAccessibility="no"
-		android:padding="24dp"
-		android:src="@drawable/ic_settings_vector"
-		app:layout_constraintEnd_toEndOf="parent"
-		app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
