@@ -98,19 +98,11 @@ class SceneviewActivity : SimpleActivity() {
 
 		setContentView(binding.root)
 
-		// A lot of flags here...
-		// Some of the code is copied from MainActivity
-		// Some is from StackOverflow, to render over notch (https://stackoverflow.com/questions/49190381/fullscreen-app-with-displaycutout)
-		// Don't be surprised if there are redundant or useless flags
-		// It works
-
-		window.addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
 		window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
 		//window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
 
 		WindowCompat.setDecorFitsSystemWindows(window, false)
 		ViewCompat.setOnApplyWindowInsetsListener(binding.rootView) { _, windowInsets ->
-			val safeInsetBottom = windowInsets.displayCutout?.safeInsetBottom ?: 0
 			val safeInsetTop = windowInsets.displayCutout?.safeInsetTop ?: 0
 
 			binding.settings.updateLayoutParams<ViewGroup.MarginLayoutParams> {
@@ -121,14 +113,15 @@ class SceneviewActivity : SimpleActivity() {
 				topMargin = safeInsetTop
 			}
 
-			val marginBottom = safeInsetBottom + navigationBarHeight + resources.getDimensionPixelSize(com.simplemobiletools.commons.R.dimen.bigger_margin)
+			//val safeInsetBottom = windowInsets.displayCutout?.safeInsetBottom ?: 0
+			//val marginBottom = safeInsetBottom + navigationBarHeight + resources.getDimensionPixelSize(com.simplemobiletools.commons.R.dimen.bigger_margin)
 
 			WindowInsetsCompat.CONSUMED
 		}
 
-		val windowInsetsController = ViewCompat.getWindowInsetsController(window.decorView)
-		windowInsetsController?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-		windowInsetsController?.hide(WindowInsetsCompat.Type.statusBars() /*or WindowInsetsCompat.Type.navigationBars()*/)
+		val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+		windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+		windowInsetsController.hide(WindowInsetsCompat.Type.statusBars() /*or WindowInsetsCompat.Type.navigationBars()*/)
 
 		binding.apply {
 			setupSceneView()
@@ -143,10 +136,6 @@ class SceneviewActivity : SimpleActivity() {
 
 		window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 		ensureTransparentNavigationBar()
-
-		if (ViewCompat.getWindowInsetsController(window.decorView) == null) {
-			window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-		}
 	}
 
 	override fun onPause() {
