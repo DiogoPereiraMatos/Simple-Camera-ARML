@@ -20,11 +20,13 @@ class ARMLParser {
 
 	private val serializer: Serializer = Persister(AnnotationStrategy(TreeStrategy()))
 
-	fun loads(xml: String): ARML? {
+	@Throws(Exception::class)
+	fun loads(xml: String): ARML {
 		return serializer.read(ARML::class.java, xml)
 	}
 
-	fun <T> loads(xml: String, root: Class<T>): T? {
+	@Throws(Exception::class)
+	fun <T> loads(xml: String, root: Class<T>): T {
 		return serializer.read(root, xml)
 	}
 }

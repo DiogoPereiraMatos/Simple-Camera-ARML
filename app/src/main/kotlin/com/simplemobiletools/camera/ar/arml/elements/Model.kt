@@ -35,11 +35,16 @@ class Model : VisualAsset() {
 
 	override fun validate(): Pair<Boolean, String> {
 		val result = super.validate(); if (!result.first) return result
-		if (type?.lowercase() !in arrayOf("normal", "infrastructure")) return Pair(
-			false,
-			"Expected \"normal\" or \"infrastructure\" for \"type\" element in ${this::class.simpleName}, got \"$type\""
-		)
-		val result1 = scale?.validate(); if (!result1?.first!!) return result1
+		if (type != null) {
+			if (type!!.lowercase() !in arrayOf("normal", "infrastructure")) return Pair(
+				false,
+				"Expected \"normal\" or \"infrastructure\" for \"type\" element in ${this::class.simpleName}, got \"$type\""
+			)
+		}
+		if (scale != null) {
+			val result1 = scale!!.validate()
+			if (!result1.first) return result1
+		}
 		return Pair(true, "Success")
 	}
 

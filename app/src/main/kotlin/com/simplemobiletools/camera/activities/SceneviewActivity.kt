@@ -3,7 +3,6 @@ package com.simplemobiletools.camera.activities
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
@@ -15,19 +14,13 @@ import androidx.lifecycle.lifecycleScope
 import com.google.ar.core.Anchor
 import com.google.ar.core.Config
 import com.google.ar.core.Plane
-import com.google.ar.core.TrackingFailureReason
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.ar.arml.ARMLParser
-import com.simplemobiletools.camera.ar.arml.elements.ARElement
-import com.simplemobiletools.camera.ar.arml.elements.ARML
-import com.simplemobiletools.camera.ar.arml.elements.Feature
-import com.simplemobiletools.camera.ar.arml.elements.ScreenAnchor
+import com.simplemobiletools.camera.ar.arml.elements.*
 import com.simplemobiletools.camera.databinding.ActivitySceneviewBinding
 import com.simplemobiletools.camera.extensions.config
-import com.simplemobiletools.commons.extensions.navigationBarHeight
 import com.simplemobiletools.commons.extensions.viewBinding
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
-import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.math.Position
 import io.github.sceneview.node.ModelNode
@@ -41,21 +34,12 @@ class SceneviewActivity : SimpleActivity() {
 
 	private val binding by viewBinding(ActivitySceneviewBinding::inflate)
 
-	val arml : ARML = ARMLParser().loads(
-		"""
-			<arml xmlns="http://www.opengis.net/arml/2.0" 
-				xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"> 
-				<ARElements>
-				</ARElements>
-			</arml>
-		""".trimIndent()
-	) ?: ARML()
-
 	var virtualObjectName : String = "models/damaged_helmet.glb"
 		set(value) {
-			if (field != value)
-				updateSceneRequested = true
+			if (field != value) {
 				Log.d(TAG, "Set $value")
+				updateSceneRequested = true
+			}
 			field = value
 		}
 	var updateSceneRequested : Boolean = false
@@ -65,30 +49,6 @@ class SceneviewActivity : SimpleActivity() {
 			field = value
 			binding.loadingView.isGone = !value
 		}
-
-	var anchorNode: AnchorNode? = null
-		set(value) {
-			if (field != value) {
-				field = value
-				updateInstructions()
-			}
-		}
-
-	var trackingFailureReason: TrackingFailureReason? = null
-		set(value) {
-			if (field != value) {
-				field = value
-				updateInstructions()
-			}
-		}
-
-	private fun updateInstructions() {
-		binding.instructionText.text = trackingFailureReason?.getDescription(this) ?: if (anchorNode == null) {
-			"Point your phone down..."
-		} else {
-			null
-		}
-	}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		useDynamicTheme = false
@@ -159,43 +119,23 @@ class SceneviewActivity : SimpleActivity() {
 				config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
 				config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
 			}
-			onSessionUpdated = { _, frame ->
-				if (anchorNode == null) {
-					frame.getUpdatedPlanes()
-						.firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
-						?.let { plane ->
-							addAnchorNode(plane.createAnchor(plane.centerPose))
-						}
-				} else {
-					if (updateSceneRequested) {
-						anchorNode?.clearChildNodes()
-						anchorNode?.apply { loadAndAddChildNode(this) }
-						updateSceneRequested = false
-					}
+			sceneView.onSessionUpdated = { _, frame ->
+				if (updateSceneRequested) {
+					clearScene()
+					handleARML(arml)
+					updateSceneRequested = false
 				}
-			}
-			onTrackingFailureChanged = { reason ->
-				this@SceneviewActivity.trackingFailureReason = reason
+				frame.getUpdatedPlanes()
+					.firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
+					?.let { plane ->
+						queuedAnchors.forEach { addAnchorNode(plane.createAnchor(plane.centerPose), it) }
+						queuedAnchors.clear()
+					}
 			}
 		}
 
 		// ARML
-		sceneView.apply {
-			val arElements : List<ARElement> = arml.elements.elements
-
-			for (element in arElements)
-			{
-				if (element is Feature)
-				{
-					continue
-				}
-
-				if (element is ScreenAnchor)
-				{
-					element.assets.labels
-				}
-			}
-		}
+		handleARML(arml)
 	}
 
 	private fun setupButtons() {
@@ -218,22 +158,22 @@ class SceneviewActivity : SimpleActivity() {
 
 	private fun listAssets(path: String): ArrayList<String>? {
 
-		val file_or_folder = assets.list(path)!!
-		if (file_or_folder.isEmpty())
+		val fileOrFolder = assets.list(path)!!
+		if (fileOrFolder.isEmpty())
 			return null
 
-		val all_assets = ArrayList<String>()
-		for (f in file_or_folder) {
+		val allAssets = ArrayList<String>()
+		for (f in fileOrFolder) {
 			val recursive = listAssets("$path/$f")
 			if (recursive != null) {
 				// is folder
-				all_assets.addAll(recursive)
+				allAssets.addAll(recursive)
 			} else {
 				// is file
-				all_assets.add("$path/$f")
+				allAssets.add("$path/$f")
 			}
 		}
-		return all_assets
+		return allAssets
 	}
 
 	private fun launchModelSettingsMenuDialog() {
@@ -249,18 +189,109 @@ class SceneviewActivity : SimpleActivity() {
 			.show()
 	}
 
-	fun addAnchorNode(anchor: Anchor) {
+	fun launchSettings() {
+		val intent = Intent(this, SettingsActivity::class.java)
+		startActivity(intent)
+	}
+
+
+	//=== ARML ===//
+
+	private val header : String = """xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink""""
+
+	val arml : ARML
+	get() {
+		try {
+			val result : ARML = ARMLParser().loads(
+				"""
+					<arml $header> 
+						<ARElements>
+						
+							<Feature id="myFeature">
+								<name>$virtualObjectName</name>
+								<anchors>
+									<Trackable id="planeTrackable">
+										<config>
+											<tracker xlink:href="#genericPlaneTracker" />
+											<src>idk</src>
+										</config>
+										<assets>
+											<Model id="myModel">
+												<href xlink:href="$virtualObjectName" /> 
+											</Model>
+											<Model id="earthModel">
+												<href xlink:href="models/Earth/Earth.gltf" /> 
+											</Model>
+										</assets>
+									</Trackable>
+								</anchors>
+							</Feature>
+							
+						</ARElements>
+					</arml>
+				""".trimIndent()
+			)
+
+			val validation = result.validate()
+			if (!validation.first) {
+				Log.e(TAG, "Invalid ARML: ${validation.second}")
+				return ARML()
+			}
+			return result
+		} catch (e : Exception) {
+			Log.e(TAG, "Failed to parse ARML.", e)
+			return ARML()
+		}
+	}
+
+	val queuedAnchors : ArrayList<Trackable> = ArrayList()
+	val assignedAnchors : HashMap<Trackable, AnchorNode> = HashMap()
+
+	fun handleARML(arml: ARML) {
+		Log.d(TAG, arml.toString())
+
+		val arElements : List<ARElement> = arml.elements.elements
+
+		for (element in arElements) {
+			if (element is Feature) return handleFeature(element)
+		}
+	}
+
+	fun handleFeature(feature: Feature) {
+		if (feature.enabled == false) return
+		val anchors : List<com.simplemobiletools.camera.ar.arml.elements.Anchor> = feature.anchors?.anchors ?: return
+
+		for (anchor in anchors) {
+			if (anchor is Trackable) return handleTrackable(anchor)
+		}
+	}
+
+	fun handleTrackable(trackable: Trackable) {
+		// Force update
+		updateSceneRequested = true
+
+		if (trackable.config.any { it.tracker.href == "#genericPlaneTracker" }) {
+			if (!assignedAnchors.containsKey(trackable))
+				if (!queuedAnchors.contains(trackable))
+					queuedAnchors.add(trackable)
+		}
+	}
+
+	fun addAnchorNode(anchor: Anchor, trackable: Trackable) {
 		val sceneView = binding.sceneView
 		sceneView.addChildNode(
 			AnchorNode(sceneView.engine, anchor)
 				.apply {
-					loadAndAddChildNode(this)
-					anchorNode = this
+					trackable.assets.assets.forEach {
+						if (it is Model)
+							loadAndAddChildNode(this, it.href.href)
+					}
+					assignedAnchors[trackable] = this
 				}
 		)
 	}
 
-	fun loadAndAddChildNode(anchor: AnchorNode) {
+	fun loadAndAddChildNode(anchor: AnchorNode, virtualObjectName: String) {
 		val sceneView = binding.sceneView
 		anchor.apply {
 			isEditable = true
@@ -285,8 +316,14 @@ class SceneviewActivity : SimpleActivity() {
 		}
 	}
 
-	fun launchSettings() {
-		val intent = Intent(this, SettingsActivity::class.java)
-		startActivity(intent)
+	fun clearScene() {
+		Log.d(TAG, "Clearing scene...")
+		val sceneView = binding.sceneView
+		queuedAnchors.clear()
+		assignedAnchors.values.forEach {
+			it.clearChildNodes()
+		}
+		assignedAnchors.clear()
+		sceneView.clearChildNodes()
 	}
 }
