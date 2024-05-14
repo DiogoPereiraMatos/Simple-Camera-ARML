@@ -7,8 +7,67 @@ import org.simpleframework.xml.ElementListUnion
 import org.simpleframework.xml.Namespace
 import org.simpleframework.xml.Root
 
+
+class Feature internal constructor(
+	private val root: ARML,
+	private val base: LowLevelFeature
+) : ARElement(root, base) {
+
+	internal constructor(root: ARML, other: Feature) : this(root, other.base)
+
+	val name: String? = base.name
+	val description: String? = base.description
+	val enabled: Boolean? = base.enabled
+	val metadata: List<String>? = base.metadata
+
+	val anchors: ArrayList<Any>
+		get() {
+			val result = ArrayList<Any>()
+			if (base.anchors != null) {
+				result.addAll(base.anchors!!.anchorRefs)
+				base.anchors!!.anchors.forEach {
+					when(it) {
+						is LowLevelScreenAnchor -> result.add(ScreenAnchor(root, it))
+						is LowLevelGeometry -> result.add(Geometry(root, it))
+						is LowLevelRelativeTo -> result.add(RelativeTo(root, it))
+						is LowLevelTrackable -> result.add(Trackable(root, it))
+						else -> throw Exception("Unexpected Feature Anchor Type: $it")
+					}
+				}
+			}
+			return result
+		}
+
+	override val elementsById: HashMap<String, ARElement>
+		get() {
+			val result: HashMap<String, ARElement> = HashMap()
+			anchors.forEach {
+				when(it) {
+					is ScreenAnchor -> { it.id?.let { id -> result[id] = it}; result.putAll(it.elementsById) }
+					is Geometry -> { it.id?.let { id -> result[id] = it}; result.putAll(it.elementsById) }
+					is RelativeTo -> { it.id?.let { id -> result[id] = it}; result.putAll(it.elementsById) }
+					is Trackable -> { it.id?.let { id -> result[id] = it}; result.putAll(it.elementsById) }
+					else -> throw Exception("Unexpected Feature Anchor Type: $it")
+				}
+			}
+			return result
+		}
+
+	override fun toString(): String {
+		return "${this::class.simpleName}(id=\"$id\",name=\"$name\",description=\"$description\",enabled=$enabled,metadata=$metadata,anchors=$anchors)"
+	}
+
+	override fun validate(): Pair<Boolean, String> {
+		anchors.filterIsInstance(Anchor::class.java).forEach { val result1 = it.validate(); if (!result1.first) return result1 }
+		return Pair(true, "Success")
+	}
+}
+
+
+
+
 @Root(name = "Feature", strict = true)
-class Feature : ARElement() {
+internal class LowLevelFeature : LowLevelARElement() {
 
 	@field:Element(name = "name", required = false)
 	var name: String? = null
@@ -26,7 +85,7 @@ class Feature : ARElement() {
 	@field:Element(name = "anchors", required = false)
 	var anchors: FeatureAnchors? = null
 
-	class FeatureAnchors {
+	internal class FeatureAnchors {
 
 		@field:ElementList(name = "anchorRef", type = AnchorRef::class, inline = true, required = false)
 		var anchorRefs: List<AnchorRef> = ArrayList()
@@ -36,46 +95,16 @@ class Feature : ARElement() {
 			@Namespace(reference = "http://www.w3.org/1999/xlink", prefix = "xlink")
 			@field:Attribute(name = "href", required = true)
 			lateinit var href: String
-
-			override fun toString(): String {
-				return href
-			}
-
-			fun validate(): Pair<Boolean, String> {
-				return Pair(true, "Success")
-			}
 		}
 
 		@field:ElementListUnion(
 			// Anchors
-			ElementList(name = "ScreenAnchor", type = ScreenAnchor::class, inline = true, required = false),
+			ElementList(name = "ScreenAnchor", type = LowLevelScreenAnchor::class, inline = true, required = false),
 			// ARAnchors
-			ElementList(name = "Geometry", type = Geometry::class, inline = true, required = false), ElementList(name = "RelativeTo", type = RelativeTo::class, inline = true, required = false),
-			ElementList(name = "Trackable", type = Trackable::class, inline = true, required = false),
+			ElementList(name = "Geometry", type = LowLevelGeometry::class, inline = true, required = false),
+			ElementList(name = "RelativeTo", type = LowLevelRelativeTo::class, inline = true, required = false),
+			ElementList(name = "Trackable", type = LowLevelTrackable::class, inline = true, required = false),
 		)
-		var anchors: List<Anchor> = ArrayList()
-
-		override fun toString(): String {
-			val result = ArrayList<Any>()
-			result.addAll(anchorRefs)
-			result.addAll(anchors)
-			return result.toString()
-		}
-
-		fun validate(): Pair<Boolean, String> {
-			anchorRefs.forEach { val result = it.validate(); if (!result.first) return result }
-			anchors.forEach { val result1 = it.validate(); if (!result1.first) return result1 }
-			return Pair(true, "Success")
-		}
-	}
-
-
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",name=\"$name\",description=\"$description\",enabled=$enabled,metadata=$metadata,anchors=$anchors)"
-	}
-
-	override fun validate(): Pair<Boolean, String> {
-		val result = anchors?.validate(); if (!result?.first!!) return result
-		return Pair(true, "Success")
+		var anchors: List<LowLevelAnchor> = ArrayList()
 	}
 }

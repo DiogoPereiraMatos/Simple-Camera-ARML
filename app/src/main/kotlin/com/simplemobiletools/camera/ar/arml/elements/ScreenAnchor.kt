@@ -6,8 +6,57 @@ import org.simpleframework.xml.ElementList
 import org.simpleframework.xml.Namespace
 import org.simpleframework.xml.Root
 
+class ScreenAnchor internal constructor(
+	private val root: ARML,
+	private val base: LowLevelScreenAnchor
+) : Anchor(root, base) {
+
+	internal constructor(root: ARML, other: ScreenAnchor) : this(root, other.base)
+
+	val style: String? = base.style
+	val css: String? = base.css
+
+	val assets: ArrayList<Any>
+		get() {
+			val result = ArrayList<Any>()
+			result.addAll(base.assets.assetsRefs)
+			base.assets.labels.forEach {
+				when(it) {
+					is LowLevelLabel -> result.add(Label(root, it))
+					else -> throw Exception("Unexpected ScreenAnchor Asset Type: $it")
+				}
+			}
+			return result
+		}
+
+	override val elementsById: HashMap<String, ARElement>
+		get() {
+			val result: HashMap<String, ARElement> = HashMap()
+			assets.forEach {
+				when(it) {
+					is Label -> { it.id?.let { id -> result[id] = it}; result.putAll(it.elementsById) }
+					else -> throw Exception("Unexpected ScreenAnchor Asset Type: $it")
+				}
+			}
+			return result
+		}
+
+	override fun toString(): String {
+		return "ScreenAnchor(id=\"$id\",enabled=$enabled,style=\"$style\",class=\"$css\",assets=$assets)"
+	}
+
+	override fun validate(): Pair<Boolean, String> {
+		val result = super.validate(); if (!result.first) return result
+		assets.filterIsInstance(VisualAsset::class.java).forEach { val result1 = it.validate(); if (!result1.first) return result1 }
+		return Pair(true, "Success")
+	}
+}
+
+
+
+
 @Root(name = "ScreenAnchor", strict = true)
-class ScreenAnchor : Anchor() {
+internal class LowLevelScreenAnchor : LowLevelAnchor() {
 
 	@field:Element(name = "style", required = false)
 	var style: String? = null
@@ -29,40 +78,9 @@ class ScreenAnchor : Anchor() {
 			@Namespace(reference = "http://www.w3.org/1999/xlink", prefix = "xlink")
 			@field:Attribute(name = "href", required = true)
 			lateinit var href: String
-
-			override fun toString(): String {
-				return href
-			}
-
-			fun validate(): Pair<Boolean, String> {
-				return Pair(true, "Success")
-			}
 		}
 
-		@field:ElementList(name = "Label", type = Label::class, inline = true, required = false)
-		var labels: List<VisualAsset> = ArrayList()
-
-		override fun toString(): String {
-			val result = ArrayList<Any>()
-			result.addAll(assetsRefs)
-			result.addAll(labels)
-			return result.toString()
-		}
-
-		fun validate(): Pair<Boolean, String> {
-			assetsRefs.forEach { val result = it.validate(); if (!result.first) return result }
-			labels.forEach { val result1 = it.validate(); if (!result1.first) return result1 }
-			return Pair(true, "Success")
-		}
-	}
-
-	override fun toString(): String {
-		return "ScreenAnchor(id=\"$id\",enabled=$enabled,style=\"$style\",class=\"$css\",assets=$assets)"
-	}
-
-	override fun validate(): Pair<Boolean, String> {
-		val result = super.validate(); if (!result.first) return result
-		val result1 = assets.validate(); if (!result1.first) return result1
-		return Pair(true, "Success")
+		@field:ElementList(name = "Label", type = LowLevelLabel::class, inline = true, required = false)
+		var labels: List<LowLevelVisualAsset> = ArrayList()
 	}
 }

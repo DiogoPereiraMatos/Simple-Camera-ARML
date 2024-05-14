@@ -11,21 +11,24 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.*
 import androidx.lifecycle.lifecycleScope
+import com.google.ar.core.*
 import com.google.ar.core.Anchor
-import com.google.ar.core.Config
-import com.google.ar.core.Plane
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.ar.arml.ARMLParser
 import com.simplemobiletools.camera.ar.arml.elements.*
+import com.simplemobiletools.camera.ar.arml.elements.Trackable
+import com.simplemobiletools.camera.ar.arml.elements.gml.Point
 import com.simplemobiletools.camera.databinding.ActivitySceneviewBinding
 import com.simplemobiletools.camera.extensions.config
 import com.simplemobiletools.commons.extensions.viewBinding
+import dev.romainguy.kotlin.math.Float3
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
+import io.github.sceneview.ar.arcore.position
 import io.github.sceneview.ar.node.AnchorNode
+import io.github.sceneview.ar.node.PoseNode
 import io.github.sceneview.math.Position
 import io.github.sceneview.node.ModelNode
 import kotlinx.coroutines.launch
-import java.util.ArrayList
 
 
 class SceneviewActivity : SimpleActivity() {
@@ -87,6 +90,11 @@ class SceneviewActivity : SimpleActivity() {
 			setupSceneView()
 			setupButtons()
 		}
+
+		// ARML
+		isLoading = true
+		handleARML()
+		isLoading = false
 	}
 
 	override fun onResume() {
@@ -119,23 +127,8 @@ class SceneviewActivity : SimpleActivity() {
 				config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
 				config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
 			}
-			sceneView.onSessionUpdated = { _, frame ->
-				if (updateSceneRequested) {
-					clearScene()
-					handleARML(arml)
-					updateSceneRequested = false
-				}
-				frame.getUpdatedPlanes()
-					.firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
-					?.let { plane ->
-						queuedAnchors.forEach { addAnchorNode(plane.createAnchor(plane.centerPose), it) }
-						queuedAnchors.clear()
-					}
-			}
+			onSessionUpdated = { session, frame -> thingsToDo.forEach {it(session, frame)} }
 		}
-
-		// ARML
-		handleARML(arml)
 	}
 
 	private fun setupButtons() {
@@ -200,99 +193,248 @@ class SceneviewActivity : SimpleActivity() {
 	private val header : String = """xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink""""
 
 	val arml : ARML
-	get() {
-		try {
-			val result : ARML = ARMLParser().loads(
-				"""
-					<arml $header> 
-						<ARElements>
-						
-							<Feature id="myFeature">
-								<name>$virtualObjectName</name>
-								<anchors>
-									<Trackable id="planeTrackable">
-										<config>
-											<tracker xlink:href="#genericPlaneTracker" />
-											<src>idk</src>
-										</config>
-										<assets>
-											<Model id="myModel">
-												<href xlink:href="$virtualObjectName" /> 
-											</Model>
-											<Model id="earthModel">
-												<href xlink:href="models/Earth/Earth.gltf" /> 
-											</Model>
-										</assets>
-									</Trackable>
-								</anchors>
-							</Feature>
+		get() {
+			try {
+				val result : ARML = ARMLParser().loads(
+					"""
+						<arml $header> 
+							<ARElements>
 							
-						</ARElements>
-					</arml>
-				""".trimIndent()
-			)
+								<Feature id="centerFeature">
+									<anchors>
+										<Trackable id="centreTrackable">
+											<config>
+												<tracker xlink:href="#genericPlaneTracker" />
+												<src>look for a plane, idk</src>
+											</config>
+											<assets>
+												<Model id="myModel">
+													<href xlink:href="$virtualObjectName" /> 
+												</Model>
+											</assets>
+										</Trackable>
+									</anchors>
+								</Feature>
+							
+								<Feature id="orbitFeature">
+									<anchors>
+										<RelativeTo>
+											<ref xlink:href="centreTrackable" />
+											<gml:Point gml:id="marsOffset" srsDimension="3">
+												<gml:pos>
+													0 0 2.5
+												</gml:pos>
+											</gml:Point>
+											<assets>
+												<Model id="marsModel">
+													<href xlink:href="models/Mars/Mars.gltf" /> 
+												</Model>
+											</assets>
+										</RelativeTo>
+									</anchors>
+								</Feature>
+								
+							</ARElements>
+						</arml>
+					""".trimIndent()
+				)
 
-			val validation = result.validate()
-			if (!validation.first) {
-				Log.e(TAG, "Invalid ARML: ${validation.second}")
+				val validation = result.validate()
+				if (!validation.first) {
+					Log.e(TAG, "Invalid ARML: ${validation.second}")
+					return ARML()
+				}
+				return result
+			} catch (e : Exception) {
+				Log.e(TAG, "Failed to parse ARML.", e)
 				return ARML()
 			}
-			return result
-		} catch (e : Exception) {
-			Log.e(TAG, "Failed to parse ARML.", e)
-			return ARML()
 		}
-	}
 
-	val queuedAnchors : ArrayList<Trackable> = ArrayList()
-	val assignedAnchors : HashMap<Trackable, AnchorNode> = HashMap()
+	private val thingsToDo : ArrayList<((Session, Frame) -> Unit)> = ArrayList()
 
-	fun handleARML(arml: ARML) {
+	// Trackables go in here vvv
+	private val queuedAnchors : ArrayList<Trackable> = ArrayList()
+
+	// RelativeTo waiting for trackables go in here vvv
+	private val queuedRelativeAnchors : HashMap<com.simplemobiletools.camera.ar.arml.elements.Anchor, RelativeTo> = HashMap()
+
+	// Assigned Trackables and RelativeTo go in here vvv
+ 	private val assignedAnchors : HashMap<com.simplemobiletools.camera.ar.arml.elements.Anchor, AnchorNode> = HashMap()
+
+	/*
+						+----------+
+						|  Scene   |
+						+----------+
+						     |
+		   -------------------------------------------------------------   ...
+		   |                                      |
+		+---------------+                 +---------------+
+		| Trackable     |                 | Trackable     |
+		| (Anchor Node) |                 | (Anchor Node) |
+		+---------------+                 +---------------+
+		   |
+		 --------------------------------------------------------------   ...
+		 |                    |                        |
+		+-------------+   +-------------+    +--------------+
+		| Model       |   | Model       |    | RelativeTo   |
+		| (ModelNode) |   | (ModelNode) |    | (AnchorNode) |
+		+-------------+   +-------------+    +--------------+
+		                                               |
+		 -----------------------------------------------
+		 |                    |                        |
+		+-------------+   +-------------+   More RelativeTo?
+		| Model       |   | Model       |
+		| (ModelNode) |   | (ModelNode) |
+		+-------------+   +-------------+
+	 */
+	private fun handleARML() {
 		Log.d(TAG, arml.toString())
 
-		val arElements : List<ARElement> = arml.elements.elements
+		val arElements : List<ARElement> = arml.elements
 
-		for (element in arElements) {
-			if (element is Feature) return handleFeature(element)
+		arElements.forEach {
+			when(it) {
+				is Feature -> handleFeature(it)
+			}
+		}
+
+		// disable any update requested during processing
+		updateSceneRequested = false
+		
+		// Only add this at the end of processing
+		thingsToDo.add { _, frame ->
+			if (updateSceneRequested) {
+				isLoading = true
+				clearScene()
+				handleARML()
+				isLoading = false
+				updateSceneRequested = false
+			}
+			frame.getUpdatedPlanes()
+				.firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
+				?.let { plane ->
+					queuedAnchors.forEach {
+						Log.d(TAG, "Assigned anchor to $it")
+						addAnchorNodeToScene(plane.createAnchor(plane.centerPose), it)
+
+						// Relative
+						//TODO: Queued relative anchors can reference other queued relative anchors, so do this recursively? Or check entire list in the end
+						if (queuedRelativeAnchors.containsKey(it)) {
+							val relativeTo = queuedRelativeAnchors[it]!!
+							val otherAnchorNode = assignedAnchors[it]!!
+							addRelativeAnchorNode(relativeTo, otherAnchorNode)
+							Log.d(TAG, "Created $relativeTo")
+							queuedRelativeAnchors.remove(it)
+						}
+					}
+					queuedAnchors.clear()
+				}
 		}
 	}
 
-	fun handleFeature(feature: Feature) {
+	private fun handleFeature(feature: Feature) {
+		Log.d(TAG, "Got Feature $feature")
 		if (feature.enabled == false) return
-		val anchors : List<com.simplemobiletools.camera.ar.arml.elements.Anchor> = feature.anchors?.anchors ?: return
+		val anchors = feature.anchors
 
-		for (anchor in anchors) {
-			if (anchor is Trackable) return handleTrackable(anchor)
+		anchors.forEach {
+			when(it) {
+				is Trackable -> handleTrackable(it)
+				is RelativeTo -> handleRelativeTo(it)
+			}
 		}
 	}
 
-	fun handleTrackable(trackable: Trackable) {
-		// Force update
-		updateSceneRequested = true
+	private fun handleTrackable(trackable: Trackable) {
+		Log.d(TAG, "Got Trackable $trackable")
 
-		if (trackable.config.any { it.tracker.href == "#genericPlaneTracker" }) {
+		if (trackable.config.any { it.tracker == "#genericPlaneTracker" }) {
 			if (!assignedAnchors.containsKey(trackable))
-				if (!queuedAnchors.contains(trackable))
+				if (!queuedAnchors.contains(trackable)) {
 					queuedAnchors.add(trackable)
+					Log.d(TAG, "Waiting for anchor for $trackable")
+				}
 		}
 	}
 
-	fun addAnchorNode(anchor: Anchor, trackable: Trackable) {
+	private fun addAnchorNodeToScene(anchor: Anchor, trackable: Trackable) {
 		val sceneView = binding.sceneView
 		sceneView.addChildNode(
 			AnchorNode(sceneView.engine, anchor)
 				.apply {
-					trackable.assets.assets.forEach {
-						if (it is Model)
-							loadAndAddChildNode(this, it.href.href)
+					trackable.assets.forEach {
+						when (it) {
+							is Model -> loadAndAddChildNode(this, it)
+						}
 					}
 					assignedAnchors[trackable] = this
 				}
 		)
 	}
 
-	fun loadAndAddChildNode(anchor: AnchorNode, virtualObjectName: String) {
+	private fun handleRelativeTo(relativeTo: RelativeTo) {
+		Log.d(TAG, "Got RelativeTo $relativeTo")
+
+		val other = arml.elementsById[relativeTo.ref]
+		if (other == null) {
+			Log.e(TAG, "RelativeTo $relativeTo trying to reference an element that does not exist (yet?).")
+			return
+		}
+
+		when(other) {
+			is Trackable -> {
+				if (assignedAnchors.containsKey(other)) {
+					val otherAnchorNode = assignedAnchors[other]!!
+					addRelativeAnchorNode(relativeTo, otherAnchorNode)
+					Log.d(TAG, "Created $relativeTo")
+				} else {
+					queuedRelativeAnchors[other] = relativeTo
+					Log.d(TAG, "Waiting for anchor for $relativeTo, aka $other")
+				}
+			}
+			else -> Log.e(TAG, "Got a RelativeTo referencing $other. Only Trackables are accepted.")
+		}
+	}
+
+	private fun addRelativeAnchorNode(relativeTo: RelativeTo, other: AnchorNode) {
 		val sceneView = binding.sceneView
+
+		val otherPos = other.position
+		var newPos = Position(0f,0f,0f)
+		when(val geometry = relativeTo.geometry) {
+			is Point -> {
+				// TODO: Do this in an higher order Point
+				val coords = geometry.pos
+					.split(" ")
+					.map(String::toFloat)
+				newPos = otherPos.plus(Float3(coords[0], coords[1], coords[2]))
+			}
+		}
+
+		val newAnchorNode = AnchorNode(sceneView.engine, other.anchor)
+			.apply {
+				other.addChildNode(this)
+				position = newPos
+				relativeTo.assets.forEach {
+					when (it) {
+						is Model -> loadAndAddChildNode(this, it)
+					}
+					assignedAnchors[relativeTo] = this
+				}
+			}
+	}
+
+	private fun loadAndAddChildNode(anchor: AnchorNode, model: Model) {
+		val sceneView = binding.sceneView
+
+		val virtualObjectName = model.href
+		val scale = minOf(
+			model.scale?.x ?: 1.0,
+			model.scale?.y ?: 1.0,
+			model.scale?.z ?: 1.0
+		)
+
 		anchor.apply {
 			isEditable = true
 			lifecycleScope.launch {
@@ -302,8 +444,8 @@ class SceneviewActivity : SimpleActivity() {
 				)?.let { modelInstance ->
 					val modelNode = ModelNode(
 						modelInstance = modelInstance,
-						// Scale to fit in a 0.5 meters cube
-						scaleToUnits = 0.5f,
+						// Scale to fit in a _scale_ meters cube
+						scaleToUnits = scale.toFloat(),
 						// Bottom origin instead of center so the model base is on floor
 						centerOrigin = Position(y = -0.5f)
 					).apply {
@@ -316,7 +458,7 @@ class SceneviewActivity : SimpleActivity() {
 		}
 	}
 
-	fun clearScene() {
+	private fun clearScene() {
 		Log.d(TAG, "Clearing scene...")
 		val sceneView = binding.sceneView
 		queuedAnchors.clear()
@@ -324,6 +466,7 @@ class SceneviewActivity : SimpleActivity() {
 			it.clearChildNodes()
 		}
 		assignedAnchors.clear()
+		thingsToDo.clear()
 		sceneView.clearChildNodes()
 	}
 }

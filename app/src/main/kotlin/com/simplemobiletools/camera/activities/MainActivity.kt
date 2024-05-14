@@ -91,6 +91,11 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+		if (config.isArmlEnabled) {
+			launchARActivity()
+		}
+
         useDynamicTheme = false
         super.onCreate(savedInstanceState)
         appLaunched(BuildConfig.APPLICATION_ID)

@@ -1,6 +1,7 @@
 package com.simplemobiletools.camera.ar.arml
 
 import com.simplemobiletools.camera.ar.arml.elements.ARML
+import com.simplemobiletools.camera.ar.arml.elements.LowLevelARML
 import org.simpleframework.xml.Serializer
 import org.simpleframework.xml.convert.AnnotationStrategy
 import org.simpleframework.xml.core.Persister
@@ -22,12 +23,7 @@ class ARMLParser {
 
 	@Throws(Exception::class)
 	fun loads(xml: String): ARML {
-		return serializer.read(ARML::class.java, xml)
-	}
-
-	@Throws(Exception::class)
-	fun <T> loads(xml: String, root: Class<T>): T {
-		return serializer.read(root, xml)
+		return ARML(serializer.read(LowLevelARML::class.java, xml))
 	}
 }
 

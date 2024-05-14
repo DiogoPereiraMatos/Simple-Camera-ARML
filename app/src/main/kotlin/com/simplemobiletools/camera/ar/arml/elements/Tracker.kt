@@ -5,8 +5,32 @@ import org.simpleframework.xml.Element
 import org.simpleframework.xml.Namespace
 import org.simpleframework.xml.Root
 
+class Tracker internal constructor(
+	private val root: ARML,
+	private val base: LowLevelTracker
+) : ARElement(root, base) {
+
+	internal constructor(root: ARML, other: Tracker) : this(root, other.base)
+
+	val uri: String = base.uri.href
+	val src: String? = base.src?.href
+
+	override val elementsById: HashMap<String, ARElement> = HashMap()
+
+	override fun toString(): String {
+		return "Tracker(id=\"$id\",uri=\"$uri\",src=\"$src\")"
+	}
+
+	override fun validate(): Pair<Boolean, String> {
+		return Pair(true, "Success")
+	}
+}
+
+
+
+
 @Root(name = "Tracker", strict = true)
-class Tracker : ARElement() {
+internal class LowLevelTracker : LowLevelARElement() {
 
 	@field:Element(name = "uri", required = true)
 	lateinit var uri: URI
@@ -16,10 +40,6 @@ class Tracker : ARElement() {
 		@Namespace(reference = "http://www.w3.org/1999/xlink", prefix = "xlink")
 		@field:Attribute(name = "href", required = true)
 		lateinit var href: String
-
-		override fun toString(): String {
-			return href
-		}
 	}
 
 	@field:Element(name = "src", required = false)
@@ -30,17 +50,5 @@ class Tracker : ARElement() {
 		@Namespace(reference = "http://www.w3.org/1999/xlink", prefix = "xlink")
 		@field:Attribute(name = "href", required = true)
 		lateinit var href: String
-
-		override fun toString(): String {
-			return href
-		}
-	}
-
-	override fun toString(): String {
-		return "Tracker(id=\"$id\",uri=\"$uri\",src=\"$src\")"
-	}
-
-	override fun validate(): Pair<Boolean, String> {
-		return Pair(true, "Success")
 	}
 }

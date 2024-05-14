@@ -10,31 +10,15 @@ import org.simpleframework.xml.ElementUnion
 import org.simpleframework.xml.Namespace
 import org.simpleframework.xml.Root
 
-@Root(name = "RelativeTo", strict = true)
-class RelativeTo : ARAnchor() {
+class RelativeTo internal constructor(
+	private val root: ARML,
+	private val base: LowLevelRelativeTo
+) : ARAnchor(root, base) {
 
-	//REQ: http://www.opengis.net/spec/arml/2.0/req/model/RelativeTo/ref
-	@field:Element(name = "ref", required = true)
-	lateinit var ref: REF
+	internal constructor(root: ARML, other: RelativeTo) : this(root, other.base)
 
-	@Root(name = "ref", strict = true)
-	class REF {
-		@Namespace(reference = "http://www.w3.org/1999/xlink", prefix = "xlink")
-		@field:Attribute(name = "href", required = true)
-		lateinit var href: String
-
-		override fun toString(): String {
-			return href
-		}
-	}
-
-	@Namespace(reference = "http://www.opengis.net/gml/3.2", prefix = "gml")
-	@field:ElementUnion(
-		Element(name = "Point", required = false, type = Point::class),
-		Element(name = "LineString", required = false, type = LineString::class),
-		Element(name = "Polygon", required = false, type = Polygon::class)
-	)
-	lateinit var geometry: GMLGeometries
+	val ref: String = base.ref.href
+	val geometry: GMLGeometries = base.geometry
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,assets=$assets,ref=\"$ref\",geometry=$geometry)"
@@ -45,4 +29,30 @@ class RelativeTo : ARAnchor() {
 		val result1 = geometry.validate(); if (!result1.first) return result1
 		return Pair(true, "Success")
 	}
+}
+
+
+
+
+@Root(name = "RelativeTo", strict = true)
+internal class LowLevelRelativeTo : LowLevelARAnchor() {
+
+	//REQ: http://www.opengis.net/spec/arml/2.0/req/model/RelativeTo/ref
+	@field:Element(name = "ref", required = true)
+	lateinit var ref: REF
+
+	@Root(name = "ref", strict = true)
+	internal class REF {
+		@Namespace(reference = "http://www.w3.org/1999/xlink", prefix = "xlink")
+		@field:Attribute(name = "href", required = true)
+		lateinit var href: String
+	}
+
+	@Namespace(reference = "http://www.opengis.net/gml/3.2", prefix = "gml")
+	@field:ElementUnion(
+		Element(name = "Point", required = false, type = Point::class),
+		Element(name = "LineString", required = false, type = LineString::class),
+		Element(name = "Polygon", required = false, type = Polygon::class)
+	)
+	lateinit var geometry: GMLGeometries
 }
