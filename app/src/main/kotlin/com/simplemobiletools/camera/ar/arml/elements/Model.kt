@@ -1,5 +1,6 @@
 package com.simplemobiletools.camera.ar.arml.elements
 
+import dev.romainguy.kotlin.math.Float3
 import org.simpleframework.xml.Attribute
 import org.simpleframework.xml.Element
 import org.simpleframework.xml.Namespace
@@ -15,6 +16,12 @@ class Model internal constructor(
 	val href: String = base.href.href
 	val type: String? = base.type
 	val scale: Scale? = base.scale?.let { Scale(root, it) }
+
+	val scaleVector: Float3 = Float3(
+		scale?.x?.toFloat() ?: 1f,
+		scale?.y?.toFloat() ?: 1f,
+		scale?.z?.toFloat() ?: 1f,
+	)
 
 	override val elementsById: HashMap<String, ARElement> = HashMap()
 

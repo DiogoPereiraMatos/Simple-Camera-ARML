@@ -29,9 +29,9 @@ class ScalingMode internal constructor(
 			false,
 			"\"maxScalingDistance\" element in ${this::class.simpleName} must be >= 0, got $maxScalingDistance"
 		)
-		if (scalingFactor != null) if (scalingFactor < 0) Pair(
+		if (scalingFactor != null) if (scalingFactor <= 0) Pair(
 			false,
-			"\"scalingFactor\" element in ${this::class.simpleName} must be >= 0, got $scalingFactor"
+			"\"scalingFactor\" element in ${this::class.simpleName} must be > 0, got $scalingFactor"
 		)
 		if (minScalingDistance != null && maxScalingDistance != null) if (maxScalingDistance < minScalingDistance) return Pair(
 			false,

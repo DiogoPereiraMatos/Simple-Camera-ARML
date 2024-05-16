@@ -52,7 +52,7 @@ class HelloArView(val activity: ARCoreActivity) : DefaultLifecycleObserver {
 							else -> null
 						} != null
 					}
-					inflate(R.menu.ar_settings_menu)
+					inflate(R.menu.arcore_settings_menu)
 					show()
 				}
 			}

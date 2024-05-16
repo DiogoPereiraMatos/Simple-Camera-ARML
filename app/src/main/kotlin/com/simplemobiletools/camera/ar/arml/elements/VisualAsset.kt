@@ -1,5 +1,6 @@
 package com.simplemobiletools.camera.ar.arml.elements
 
+import dev.romainguy.kotlin.math.Float3
 import org.simpleframework.xml.Element
 import org.simpleframework.xml.ElementList
 
@@ -28,6 +29,12 @@ abstract class VisualAsset internal constructor(
 			}
 			return result
 		}
+
+	val rotationVector: Float3 = Float3(
+		orientation?.roll?.toFloat() ?: 0f,
+		orientation?.heading?.toFloat() ?: 0f, //pan
+		orientation?.tilt?.toFloat() ?: 0f,
+	)
 
 	override fun validate(): Pair<Boolean, String> {
 		if (orientation != null) {

@@ -15,17 +15,17 @@ class Scale internal constructor(
 	val z: Double? = base.z
 
 	fun validate(): Pair<Boolean, String> {
-		if (x != null) if (x < 0) return Pair(
+		if (x != null) if (x <= 0) return Pair(
 			false,
-			"\"x\" element in ${this::class.simpleName} must be >= 0, got $x"
+			"\"x\" element in ${this::class.simpleName} must be > 0, got $x"
 		)
-		if (y != null) if (y < 0) return Pair(
+		if (y != null) if (y <= 0) return Pair(
 			false,
-			"\"y\" element in ${this::class.simpleName} must be >= 0, got $y"
+			"\"y\" element in ${this::class.simpleName} must be > 0, got $y"
 		)
-		if (z != null) if (z < 0) return Pair(
+		if (z != null) if (z <= 0) return Pair(
 			false,
-			"\"z\" element in ${this::class.simpleName} must be >= 0, got $z"
+			"\"z\" element in ${this::class.simpleName} must be > 0, got $z"
 		)
 		return Pair(true, "Success")
 	}

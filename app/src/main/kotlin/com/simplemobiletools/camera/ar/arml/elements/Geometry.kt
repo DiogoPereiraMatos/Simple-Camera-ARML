@@ -1,10 +1,7 @@
 package com.simplemobiletools.camera.ar.arml.elements
 
-import com.simplemobiletools.camera.ar.arml.elements.gml.GMLGeometries
-import com.simplemobiletools.camera.ar.arml.elements.gml.LineString
-import com.simplemobiletools.camera.ar.arml.elements.gml.Point
-import com.simplemobiletools.camera.ar.arml.elements.gml.Polygon
-import com.simplemobiletools.camera.extensions.getRandomMediaName
+import com.simplemobiletools.camera.ar.arml.elements.gml.*
+import com.simplemobiletools.camera.ar.arml.elements.gml.LowLevelPoint
 import org.simpleframework.xml.Element
 import org.simpleframework.xml.ElementUnion
 import org.simpleframework.xml.Namespace
@@ -17,7 +14,14 @@ class Geometry internal constructor(
 
 	internal constructor(root: ARML, other: Geometry) : this(root, other.base)
 
-	val geometry: GMLGeometries = base.geometry
+	val geometry: GMLGeometries = base.geometry.let {
+		when (it) {
+			is LowLevelPoint -> Point(root, it)
+			is LowLevelLineString -> LineString(root, it)
+			is LowLevelPolygon -> Polygon(root, it)
+			else -> throw Exception("Unexpected Geometry GMLGeometries Type: $it")
+		}
+	}
 
 	override val elementsById: HashMap<String, ARElement> = HashMap()
 
@@ -40,9 +44,9 @@ internal class LowLevelGeometry : LowLevelARAnchor() {
 
 	@Namespace(reference = "http://www.opengis.net/gml/3.2", prefix = "gml")
 	@field:ElementUnion(
-		Element(name = "Point", required = false, type = Point::class),
-		Element(name = "LineString", required = false, type = LineString::class),
-		Element(name = "Polygon", required = false, type = Polygon::class),
+		Element(name = "Point", required = false, type = LowLevelPoint::class),
+		Element(name = "LineString", required = false, type = LowLevelLineString::class),
+		Element(name = "Polygon", required = false, type = LowLevelPolygon::class),
 	)
-	lateinit var geometry: GMLGeometries
+	lateinit var geometry: LowLevelGMLGeometries
 }

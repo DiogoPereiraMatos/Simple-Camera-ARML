@@ -1,21 +1,63 @@
+
 <arml xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">
 	<ARElements>
-		<Feature id="myFeature">
-			<name>My first Feature</name>
-			<anchors>
-			</anchors>
-		</Feature>
+
+	<Feature id="centerFeature">
+		<anchors>
+			<Trackable id="centreTrackable">
+				<config>
+					<tracker xlink:href="#genericPlaneTracker" />
+					<src>look for a plane, idk</src>
+				</config>
+				<assets>
+					<Model id="myModel">
+						<href xlink:href="$myModelPath" />
+						<Orientation>
+							<roll>0</roll>
+							<tilt>90</tilt>
+							<heading>0</heading> <!-- 0 is North (+Z) -->
+						</Orientation>
+						<Scale>
+							<x>1.5</x>
+							<y>1.5</y>
+							<z>2</z>
+						</Scale>
+					</Model>
+				</assets>
+			</Trackable>
+		</anchors>
+	</Feature>
+
+	<Feature id="orbitFeature">
+		<anchors>
+			<RelativeTo id="marsAnchor">
+				<ref xlink:href="centreTrackable" />
+				<gml:Point gml:id="marsOffset" srsDimension="3">
+					<gml:pos>
+						0 0 1
+					</gml:pos>
+				</gml:Point>
+				<assets>
+					<Model id="marsModel">
+						<href xlink:href="models/Mars/Mars.gltf" />
+					</Model>
+				</assets>
+			</RelativeTo>
+			<RelativeTo>
+				<ref xlink:href="centreTrackable" />
+				<gml:Point srsDimension="3">
+					<gml:pos>
+						0 0 2
+					</gml:pos>
+				</gml:Point>
+				<assets>
+					<Model>
+						<href xlink:href="$myModelPath" />
+					</Model>
+				</assets>
+			</RelativeTo>
+		</anchors>
+	</Feature>
+
 	</ARElements>
-
-	<style type="text/css">
-		<![CDATA[
-			… CSS style definitions of any Visual Assets
-		]]>
-	</style>
-
-	<script type="text/ecmascript">  <!--might also be javascript and other derivatives -->
-		<![CDATA[
-			… ECMAScript goes here …
-		]]>
-	</script>
 </arml>
