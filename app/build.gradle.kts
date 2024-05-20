@@ -101,6 +101,7 @@ dependencies {
 
 	// XML/ARML Parser
 	implementation(libs.simple.xml)
+	implementation(libs.junit.v412)
 
 	// ARCore
     //implementation(libs.core)

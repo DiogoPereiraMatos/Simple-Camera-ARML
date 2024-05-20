@@ -25,5 +25,10 @@ class ARMLParser {
 	fun loads(xml: String): ARML {
 		return ARML(serializer.read(LowLevelARML::class.java, xml))
 	}
+
+	@Throws(Exception::class)
+	internal fun <T> loads(xml: String, root: Class<T>): T {
+		return serializer.read(root, xml)
+	}
 }
 

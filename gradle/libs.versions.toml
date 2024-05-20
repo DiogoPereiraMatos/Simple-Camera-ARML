@@ -4,6 +4,10 @@ arsceneview = "2.0.4" # 2.1.0 available but was crashing with destroy calls (htt
 barcodeScanning = "17.2.0"
 core = "1.42.0"
 coreVersion = "3.5.3"
+espressoCore = "3.5.1"
+junit = "4.13.2"
+junitJunit = "4.12"
+junitVersion = "1.1.5"
 kotlin = "1.9.0"
 #Androidx
 androidx-document-file = "1.0.1"
@@ -38,6 +42,8 @@ androidx-camera-video = { module = "androidx.camera:camera-video", version.ref =
 androidx-camera-extensions = { module = "androidx.camera:camera-extensions", version.ref = "androidx-camera" }
 androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "androidx-camera" }
 androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "androidx-camera" }
+androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCore" }
+androidx-junit = { module = "androidx.test.ext:junit", version.ref = "junitVersion" }
 androidx-window = { module = "androidx.window:window", version.ref = "androidx-window" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "androidx-ktx" }
 androidx-exifinterface = { module = "androidx.exifinterface:exifinterface", version.ref = "androidx-exif-interface" }
@@ -45,6 +51,8 @@ androidx-documentfile = { module = "androidx.documentfile:documentfile", version
 #Simple Mobile Tools
 arsceneview = { module = "io.github.sceneview:arsceneview", version.ref = "arsceneview" }
 barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "barcodeScanning" }
+junit = { module = "junit:junit", version.ref = "junit" }
+junit-v412 = { module = "junit:junit", version.ref = "junitJunit" }
 obj = { module = "de.javagl:obj", version.ref = "obj" }
 core = { module = "com.google.ar:core", version.ref = "core" }
 sceneview = { module = "io.github.sceneview:sceneview", version.ref = "arsceneview" }
