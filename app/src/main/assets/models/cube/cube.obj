@@ -3,7 +3,6 @@
 # object simple cube
 #
 
-mtllib cube.mtl
 o cube
 
 v 0.5 0.5 0.5

@@ -6,8 +6,6 @@ import org.junit.Test
 
 class ParsingTest {
 
-	private val xsd_path : String = "src\\main\\kotlin\\com\\simplemobiletools\\camera\\ar\\arml\\arml.xsd"
-
 	private val header : String = """xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink""""
 
 	@Test
