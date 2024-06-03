@@ -11,7 +11,7 @@ abstract class GMLGeometries internal constructor(
 
 	internal constructor(root: ARML, other: GMLGeometries) : this(root, other.base)
 
-	val id: String? = base.id
+	val id: String = base.id
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(gml:id=$id)"
@@ -26,7 +26,7 @@ abstract class GMLGeometries internal constructor(
 //REQ: http://www.opengis.net/spec/arml/2.0/req/model/GMLGeometries/interface
 internal abstract class LowLevelGMLGeometries {
 
-	@Namespace(reference = "http://www.opengis.net/gml/3.2", prefix = "gml")
-	@field:Attribute(name = "id", required = false)
-	var id: String? = null
+	//@Namespace(reference = "http://www.opengis.net/gml/3.2", prefix = "gml")
+	@field:Attribute(name = "id", required = true)
+	lateinit var id: String
 }

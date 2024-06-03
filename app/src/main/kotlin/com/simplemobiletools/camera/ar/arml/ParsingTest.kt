@@ -98,7 +98,7 @@ class ParsingTest {
 							<assetRef xlink:href="#appleModel" />
 							<assetRef xlink:href="#appleModel" />
 						</assets>
-						<gml:Point>
+						<gml:Point id="applePosition">
 							<gml:pos>1 2</gml:pos>
 						</gml:Point>
 					</Geometry>
@@ -138,7 +138,7 @@ class ParsingTest {
 							<assetRef xlink:href="#appleModel" />
 							<assetRef xlink:href="#appleModel" />
 						</assets>
-						<gml:Point gml:id=“point1”>
+						<gml:Point id=“point1”>
 							<gml:pos>1 2</gml:pos>
 						</gml:Point>
 					</Geometry>
@@ -168,7 +168,7 @@ class ParsingTest {
 	@Test
 	fun simple_xml_point_1() {
 		val str = """
-			<gml:Point gml:id="myPointWithAltitudeOfUser" $header>
+			<gml:Point id="myPointWithAltitudeOfUser" $header>
 				<gml:pos>
 					47.48 13.14
 				</gml:pos>
@@ -197,7 +197,7 @@ class ParsingTest {
 	@Test
 	fun simple_xml_point_2() {
 		val str = """
-			<gml:Point gml:id="myPointWithExplicitAltitude" srsDimension="3" $header>
+			<gml:Point id="myPointWithExplicitAltitude" srsDimension="3" $header>
 				<gml:pos>
 					47.48 13.14 520
 				</gml:pos>
@@ -226,7 +226,7 @@ class ParsingTest {
 	@Test
 	fun simple_xml_linestring() {
 		val str = """
-			<gml:LineString gml:id="myLineString" $header>
+			<gml:LineString id="myLineString" $header>
 				<gml:posList>
 					47.48 13.14 48.49 14.15
 				</gml:posList>
@@ -255,23 +255,23 @@ class ParsingTest {
 	@Test
 	fun simple_xml_polygon() {
 		val str = """
-			<gml:Polygon gml:id="myPolygon" $header>
+			<gml:Polygon id="myPolygon" $header>
 				<gml:exterior>
-					<gml:LinearRing>
+					<gml:LinearRing id="exteriorLinearRing">
 						<gml:posList>
 							47.48 13.14 48.49 14.15 48.49 14.13 47.48 13.14
 						</gml:posList>
 					</gml:LinearRing>
 				</gml:exterior>
 				<gml:interior>
-					<gml:LinearRing>
+					<gml:LinearRing id="interiorLinearRing1">
 						<gml:posList>
 							48.00 14.00 48.01 14.01 48.01 13.99 48.00 14.00
 						</gml:posList>
 					</gml:LinearRing>
 				</gml:interior>
 				<gml:interior>
-					<gml:LinearRing>
+					<gml:LinearRing id="interiorLinearRing2">
 						<gml:posList>
 							48.00 14.00 48.01 14.01 48.01 13.99 48.00 14.00
 						</gml:posList>
@@ -541,7 +541,7 @@ class ParsingTest {
 			<!-- assuming a square Trackable with size 5 for this example-->
 			<RelativeTo $header>
 				<ref xlink:href="#myTrackable" />
-				<gml:LineString gml:id="trackableOutline">
+				<gml:LineString id="trackableOutline">
 					<gml:posList dimension="3"> <!-- will describe the outline of the square marker (2.5 meters from origin to top, bottom, left and right edge -->
 						2.5 2.5 0 2.5 -2.5 0 -2.5 -2.5 0 -2.5 2.5 0 2.5 2.5 0
 					</gml:posList>
