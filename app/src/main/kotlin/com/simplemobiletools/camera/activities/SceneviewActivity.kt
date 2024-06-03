@@ -23,6 +23,7 @@ import com.simplemobiletools.camera.extensions.config
 import com.simplemobiletools.commons.extensions.viewBinding
 import dev.romainguy.kotlin.math.Float3
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
+import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.math.Position
 import io.github.sceneview.node.ModelNode
@@ -36,7 +37,6 @@ class SceneviewActivity : SimpleActivity() {
 
 	private val binding by viewBinding(ActivitySceneviewBinding::inflate)
 
-	//TODO: Choose ARML scene instead of model
 	var myModelPath : String = "models/damaged_helmet.glb"
 		set(value) {
 			if (field != value) {
@@ -60,6 +60,18 @@ class SceneviewActivity : SimpleActivity() {
 			field = value
 			binding.loadingView.isGone = !value
 		}
+
+	var trackingFailureReason: TrackingFailureReason? = null
+		set(value) {
+			if (field != value) {
+				field = value
+				updateInstructions()
+			}
+		}
+
+	fun updateInstructions() {
+		binding.instructionText.text = trackingFailureReason?.let { it.getDescription(this) }
+	}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		useDynamicTheme = false
@@ -98,6 +110,11 @@ class SceneviewActivity : SimpleActivity() {
 			setupSceneView()
 			setupButtons()
 		}
+
+		// ARML
+		isLoading = true
+		handleARML()
+		isLoading = false
 	}
 
 	override fun onResume() {
@@ -107,11 +124,6 @@ class SceneviewActivity : SimpleActivity() {
 
 		window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 		ensureTransparentNavigationBar()
-
-		// ARML
-		isLoading = true
-		handleARML()
-		isLoading = false
 	}
 
 	override fun onPause() {
@@ -136,6 +148,9 @@ class SceneviewActivity : SimpleActivity() {
 				config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
 			}
 			onSessionUpdated = { session, frame -> thingsToDo.forEach {it(session, frame)} }
+			onTrackingFailureChanged = { reason ->
+				this@SceneviewActivity.trackingFailureReason = reason
+			}
 		}
 	}
 
@@ -323,21 +338,33 @@ class SceneviewActivity : SimpleActivity() {
 
 		anchors.forEach {
 			when(it) {
-				is Trackable -> handleTrackable(it)
-				is RelativeTo -> handleRelativeTo(it)
+				is Trackable -> if (it.enabled != false) handleTrackable(it)
+				is RelativeTo -> if (it.enabled != false) handleRelativeTo(it)
+				is ScreenAnchor -> if (it.enabled != false) Log.d(TAG, "Got ScreenAnchor $it")
+				is Geometry -> if (it.enabled != false) Log.d(TAG, "Got Geometry $it")
+
+				is LowLevelFeature.FeatureAnchors.AnchorRef -> arml.elementsById[it.href].let {
+					when (it) {
+						is Trackable -> if (it.enabled != false) handleTrackable(it)
+						is RelativeTo -> if (it.enabled != false) handleRelativeTo(it)
+						is ScreenAnchor -> if (it.enabled != false) Log.d(TAG, "Got ScreenAnchor $it")
+						is Geometry -> if (it.enabled != false) Log.d(TAG, "Got Geometry $it")
+					}
+				}
 			}
 		}
 	}
 
 	private fun handleTrackable(trackable: Trackable) {
 		Log.d(TAG, "Got Trackable $trackable")
+		val configList = trackable.config.sortedBy { it.order }
 
-		if (trackable.config.any { it.tracker == "#genericPlaneTracker" }) {
-			if (!assignedAnchors.containsKey(trackable))
-				if (!queuedAnchors.contains(trackable)) {
+		configList.forEach {
+			if (it.tracker == "#genericPlaneTracker") {
+				if (!assignedAnchors.containsKey(trackable) && !queuedAnchors.contains(trackable))
 					queuedAnchors.add(trackable)
 					Log.d(TAG, "Waiting for anchor for $trackable")
-				}
+			}
 		}
 	}
 
@@ -362,7 +389,18 @@ class SceneviewActivity : SimpleActivity() {
 					Log.d(TAG, "Waiting for anchor for $relativeTo, aka $other")
 				}
 			}
-			else -> Log.e(TAG, "Got a RelativeTo referencing $other. Only Trackables are accepted.")
+			is RelativeTo -> {
+				if (assignedAnchors.containsKey(other)) {
+					val otherAnchorNode = assignedAnchors[other]!!
+					addRelativeAnchorNode(relativeTo, otherAnchorNode)
+					Log.d(TAG, "Created $relativeTo")
+				} else {
+					queuedRelativeAnchors.putIfAbsent(other, ArrayList())
+					queuedRelativeAnchors[other]!!.add(relativeTo)
+					Log.d(TAG, "Waiting for anchor for $relativeTo, aka $other")
+				}
+			}
+			else -> Log.e(TAG, "Got a RelativeTo referencing $other. That type is not supported for now.")
 		}
 	}
 
@@ -385,7 +423,7 @@ class SceneviewActivity : SimpleActivity() {
 				.apply {
 					trackable.assets.forEach {
 						when (it) {
-							is Model -> loadAndAddChildNode(this, it)
+							is Model -> loadAndAddChildNode(this, it, size=trackable.size?.toFloat())
 						}
 					}
 					assignedAnchors[trackable] = this
@@ -437,7 +475,7 @@ class SceneviewActivity : SimpleActivity() {
 			}
 	}
 
-	private fun loadAndAddChildNode(anchor: AnchorNode, model: Model) {
+	private fun loadAndAddChildNode(anchor: AnchorNode, model: Model, size: Float? = 1f) {
 		val sceneView = binding.sceneView
 
 		val modelPath = model.href
@@ -453,7 +491,7 @@ class SceneviewActivity : SimpleActivity() {
 				)?.let { modelInstance ->
 					val modelNode = ModelNode(
 						modelInstance = modelInstance,
-						scaleToUnits = 0.25f,
+						scaleToUnits = size,
 						centerOrigin = Position(0f,0f,0f)
 					).apply {
 						isEditable = true
