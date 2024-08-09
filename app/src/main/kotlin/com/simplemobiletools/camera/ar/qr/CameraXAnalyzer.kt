@@ -111,7 +111,7 @@ class CameraXAnalyzer(
 							}
 
 							Log.d("CameraXAnalyzer", arml.toString())
-							launchARActivity(armlContent)
+							//launchARActivity(armlContent)
 							
 						} catch (e : Exception) {
 							Log.e("CameraXAnalyzer", "Failed to read ARML!", e)

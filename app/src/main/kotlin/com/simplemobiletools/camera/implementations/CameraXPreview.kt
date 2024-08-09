@@ -189,7 +189,7 @@ class CameraXPreview(
             val useCaseGroup = UseCaseGroup.Builder()
                 .addUseCase(previewUseCase)
                 .addUseCase(captureUseCase)
-				//.addUseCase(analyzeUseCase)
+				.addUseCase(analyzeUseCase)
                 .setViewPort(viewPort)
                 .build()
 
@@ -204,7 +204,7 @@ class CameraXPreview(
                 cameraSelector,
                 previewUseCase,
                 captureUseCase,
-				//analyzeUseCase,
+				analyzeUseCase,
             )
         }
         preview = previewUseCase
