@@ -13,9 +13,9 @@
 						<Model id="sunModel">
 							<href xlink:href="models/Sol/Sol.gltf" />
 							<Scale>
-								<x>0.25</x>
+								<x>0.5</x>
 								<y>0.25</y>
-								<z>0.25</z>
+								<z>1</z>
 							</Scale>
 						</Model>
 					</assets>
@@ -32,9 +32,9 @@
 						<Model id="earthModel">
 							<href xlink:href="models/Earth/Earth.gltf" />
 							<Scale>
-								<x>0.25</x>
+								<x>0.5</x>
 								<y>0.25</y>
-								<z>0.25</z>
+								<z>1</z>
 							</Scale>
 						</Model>
 					</assets>

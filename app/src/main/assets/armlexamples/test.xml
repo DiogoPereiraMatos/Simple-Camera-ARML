@@ -2,62 +2,210 @@
 <arml xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">
 	<ARElements>
 
-	<Feature id="centerFeature">
-		<anchors>
-			<Trackable id="centreTrackable">
-				<config>
-					<tracker xlink:href="#genericPlaneTracker" />
-					<src>look for a plane, idk</src>
-				</config>
-				<assets>
-					<Model id="myModel">
-						<href xlink:href="$myModelPath" />
-						<Orientation>
-							<roll>0</roll>
-							<tilt>90</tilt>
-							<heading>0</heading> <!-- 0 is North (+Z) -->
-						</Orientation>
-						<Scale>
-							<x>1.5</x>
-							<y>1.5</y>
-							<z>2</z>
-						</Scale>
-					</Model>
-				</assets>
-			</Trackable>
-		</anchors>
-	</Feature>
+		<Feature id="solarSystemFeature">
+			<anchors>
 
-	<Feature id="orbitFeature">
-		<anchors>
-			<RelativeTo id="marsAnchor">
-				<ref xlink:href="centreTrackable" />
-				<gml:Point gml:id="marsOffset" srsDimension="3">
-					<gml:pos>
-						0 0 1
-					</gml:pos>
-				</gml:Point>
-				<assets>
-					<Model id="marsModel">
-						<href xlink:href="models/Mars/Mars.gltf" />
-					</Model>
-				</assets>
-			</RelativeTo>
-			<RelativeTo>
-				<ref xlink:href="centreTrackable" />
-				<gml:Point srsDimension="3">
-					<gml:pos>
-						0 0 2
-					</gml:pos>
-				</gml:Point>
-				<assets>
-					<Model>
-						<href xlink:href="$myModelPath" />
-					</Model>
-				</assets>
-			</RelativeTo>
-		</anchors>
-	</Feature>
+				<Trackable id="centreAnchor">
+					<config>
+						<tracker xlink:href="#genericPlaneTracker" />
+						<src>look for a plane, idk</src>
+					</config>
+					<assets>
+						<Model id="sunModel">
+							<href xlink:href="models/Sol/Sol.gltf" />
+							<!--<Orientation>
+								<roll>0</roll>
+								<tilt>90</tilt>
+								<heading>0</heading>
+							</Orientation>-->
+							<Scale>
+								<x>0.25</x>
+								<y>0.25</y>
+								<z>0.25</z>
+							</Scale>
+							<!--<SelectedCondition>
+								<selected>false</selected>
+								<listener>anchor</listener>
+							</SelectedCondition>-->
+							<DistanceCondition>
+								<max>0.1</max>
+							</DistanceCondition>
+						</Model>
 
+						<Model id="mercuryModel">
+							<href xlink:href="models/Mercury/Mercury.gltf" />
+							<Scale>
+								<x>0.25</x>
+								<y>0.25</y>
+								<z>0.25</z>
+							</Scale>
+							<!--<SelectedCondition>
+								<selected>true</selected>
+								<listener>anchor</listener>
+							</SelectedCondition>-->
+							<DistanceCondition>
+								<min>0.1</min>
+							</DistanceCondition>
+						</Model>
+					</assets>
+				</Trackable>
+
+				<!--
+
+				<RelativeTo id="mercuryAnchor">
+					<ref xlink:href="centreAnchor" />
+					<gml:Point id="mercuryOffset" srsDimension="3">
+						<gml:pos>
+							0 0 0.1
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Model id="mercuryModel">
+							<href xlink:href="models/Mercury/Mercury.gltf" />
+							<Scale>
+								<x>0.25</x>
+								<y>0.25</y>
+								<z>0.25</z>
+							</Scale>
+						</Model>
+					</assets>
+				</RelativeTo>
+
+				<RelativeTo id="venusAnchor">
+					<ref xlink:href="centreAnchor" />
+					<gml:Point id="venusOffset" srsDimension="3">
+						<gml:pos>
+							0 0 0.2
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Model id="venusModel">
+							<href xlink:href="models/Venus/Venus.gltf" />
+							<Scale>
+								<x>0.25</x>
+								<y>0.25</y>
+								<z>0.25</z>
+							</Scale>
+						</Model>
+					</assets>
+				</RelativeTo>
+
+				<RelativeTo id="earthAnchor">
+					<ref xlink:href="centreAnchor" />
+					<gml:Point id="earthOffset" srsDimension="3">
+						<gml:pos>
+							0 0 0.3
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Model id="earthModel">
+							<href xlink:href="models/Earth/Earth.gltf" />
+							<Scale>
+								<x>0.25</x>
+								<y>0.25</y>
+								<z>0.25</z>
+							</Scale>
+						</Model>
+					</assets>
+				</RelativeTo>
+
+				<RelativeTo id="marsAnchor">
+					<ref xlink:href="centreAnchor" />
+					<gml:Point id="marsOffset" srsDimension="3">
+						<gml:pos>
+							0 0 0.4
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Model id="marsModel">
+							<href xlink:href="models/Mars/Mars.gltf" />
+							<Scale>
+								<x>0.25</x>
+								<y>0.25</y>
+								<z>0.25</z>
+							</Scale>
+						</Model>
+					</assets>
+				</RelativeTo>
+
+				<RelativeTo id="jupiterAnchor">
+					<ref xlink:href="centreAnchor" />
+					<gml:Point id="jupiterOffset" srsDimension="3">
+						<gml:pos>
+							0 0 0.5
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Model id="jupiterModel">
+							<href xlink:href="models/Jupiter/Jupiter.gltf" />
+							<Scale>
+								<x>0.25</x>
+								<y>0.25</y>
+								<z>0.25</z>
+							</Scale>
+						</Model>
+					</assets>
+				</RelativeTo>
+
+				<RelativeTo id="saturnAnchor">
+					<ref xlink:href="centreAnchor" />
+					<gml:Point id="saturnOffset" srsDimension="3">
+						<gml:pos>
+							0 0 0.6
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Model id="saturnModel">
+							<href xlink:href="models/Saturn/Saturn.gltf" />
+							<Scale>
+								<x>0.25</x>
+								<y>0.25</y>
+								<z>0.25</z>
+							</Scale>
+						</Model>
+					</assets>
+				</RelativeTo>
+
+				<RelativeTo id="uranusAnchor">
+					<ref xlink:href="centreAnchor" />
+					<gml:Point id="uranusOffset" srsDimension="3">
+						<gml:pos>
+							0 0 0.7
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Model id="uranusModel">
+							<href xlink:href="models/Uranus/Uranus.gltf" />
+							<Scale>
+								<x>0.25</x>
+								<y>0.25</y>
+								<z>0.25</z>
+							</Scale>
+						</Model>
+					</assets>
+				</RelativeTo>
+
+				<RelativeTo id="neptuneAnchor">
+					<ref xlink:href="centreAnchor" />
+					<gml:Point id="neptuneOffset" srsDimension="3">
+						<gml:pos>
+							0 0 0.8
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Model id="neptuneModel">
+							<href xlink:href="models/Neptune/Neptune.gltf" />
+							<Scale>
+								<x>0.25</x>
+								<y>0.25</y>
+								<z>0.25</z>
+							</Scale>
+						</Model>
+					</assets>
+				</RelativeTo>
+				-->
+
+			</anchors>
+		</Feature>
 	</ARElements>
 </arml>
