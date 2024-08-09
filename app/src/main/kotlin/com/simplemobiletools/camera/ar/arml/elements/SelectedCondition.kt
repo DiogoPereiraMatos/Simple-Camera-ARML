@@ -11,12 +11,12 @@ class SelectedCondition internal constructor(
 	internal constructor(root: ARML, other: SelectedCondition) : this(root, other.base)
 
 	val selected: Boolean = base.selected
-	val listener: String? = base.listener
+	val listener: String = base.listener
 
 	override val elementsById: HashMap<String, ARElement> = HashMap()
 
 	override fun validate(): Pair<Boolean, String> {
-		if (listener?.lowercase() !in arrayOf("feature", "anchor")) return Pair(
+		if (listener.lowercase() !in arrayOf("feature", "anchor")) return Pair(
 			false,
 			"Expected \"feature\" or \"anchor\" for \"listener\" element in ${this::class.simpleName}, got \"$listener\""
 		)
@@ -38,5 +38,5 @@ internal class LowLevelSelectedCondition : LowLevelCondition() {
 	var selected: Boolean = true
 
 	@field:Element(name = "listener", required = false)
-	var listener: String? = null
+	var listener: String = "anchor"
 }

@@ -3,6 +3,7 @@ package com.simplemobiletools.camera.ar.arml.elements
 import dev.romainguy.kotlin.math.Float3
 import org.simpleframework.xml.Element
 import org.simpleframework.xml.ElementList
+import org.simpleframework.xml.ElementListUnion
 
 abstract class VisualAsset internal constructor(
 	private val root: ARML,
@@ -24,6 +25,7 @@ abstract class VisualAsset internal constructor(
 			lowLevelList.forEach {
 				when(it) {
 					is LowLevelSelectedCondition -> result.add(SelectedCondition(root, it))
+					is LowLevelDistanceCondition -> result.add(DistanceCondition(root, it))
 					else -> throw Exception("Unexpected VisualAsset Condition Type: $it")
 				}
 			}
@@ -70,6 +72,9 @@ internal abstract class LowLevelVisualAsset : LowLevelARElement() {
 	@field:Element(name = "ScalingMode", required = false)
 	var scalingMode: LowLevelScalingMode? = null
 
-	@field:ElementList(name = "Conditions", required = false, inline = false)
+	@field:ElementListUnion(
+		ElementList(name = "SelectedCondition", type = LowLevelSelectedCondition::class, inline = true, required = false),
+		ElementList(name = "DistanceCondition", type = LowLevelDistanceCondition::class, inline = true, required = false),
+	)
 	var conditions: List<LowLevelCondition>? = null
 }
