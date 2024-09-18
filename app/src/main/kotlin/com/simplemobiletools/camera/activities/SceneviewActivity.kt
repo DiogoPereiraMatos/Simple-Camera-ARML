@@ -12,11 +12,11 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.*
 import androidx.lifecycle.lifecycleScope
 import com.google.ar.core.*
-import com.google.ar.core.Anchor
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.ar.arml.ARMLParser
 import com.simplemobiletools.camera.ar.arml.elements.*
 import com.simplemobiletools.camera.ar.arml.elements.Trackable
+import com.simplemobiletools.camera.ar.arml.elements.Anchor
 import com.simplemobiletools.camera.ar.arml.elements.gml.Point
 import com.simplemobiletools.camera.databinding.ActivitySceneviewBinding
 import com.simplemobiletools.camera.extensions.config
@@ -27,19 +27,22 @@ import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.math.Position
+import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.node.ModelNode
-import io.github.sceneview.node.Node
 import io.github.sceneview.utils.readBuffer
 import kotlinx.coroutines.launch
 
 
 class SceneviewActivity : SimpleActivity() {
 
-	companion object val TAG = "ARML"
+	companion object {
+		const val DISTANCE_ROLLING_AVG_N = 3
+		const val TAG = "ARML"
+	}
 
 	private val binding by viewBinding(ActivitySceneviewBinding::inflate)
 
-	var myModelPath : String = "models/damaged_helmet.glb"
+	private var myModelPath : String = "models/damaged_helmet.glb"
 		set(value) {
 			if (field != value) {
 				Log.d(TAG, "Set virtualObjectName to $value")
@@ -47,7 +50,7 @@ class SceneviewActivity : SimpleActivity() {
 			}
 			field = value
 		}
-	var armlPath : String = "armlexamples/empty.xml"
+	private var armlPath : String = "armlexamples/empty.xml"
 		set(value) {
 			if (field != value) {
 				Log.d(TAG, "Set armlPath to $value")
@@ -55,15 +58,15 @@ class SceneviewActivity : SimpleActivity() {
 			}
 			field = value
 		}
-	var updateSceneRequested : Boolean = false
+	private var updateSceneRequested : Boolean = false
 
-	var isLoading = false
+	private var isLoading = false
 		set(value) {
 			field = value
 			binding.loadingView.isGone = !value
 		}
 
-	var trackingFailureReason: TrackingFailureReason? = null
+	private var trackingFailureReason: TrackingFailureReason? = null
 		set(value) {
 			if (field != value) {
 				field = value
@@ -71,8 +74,8 @@ class SceneviewActivity : SimpleActivity() {
 			}
 		}
 
-	fun updateInstructions() {
-		binding.instructionText.text = trackingFailureReason?.let { it.getDescription(this) }
+	private fun updateInstructions() {
+		binding.instructionText.text = trackingFailureReason?.getDescription(this)
 	}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
@@ -228,7 +231,8 @@ class SceneviewActivity : SimpleActivity() {
 	//=== ARML ===//
 	// Needs to be var and be initialized as empty, or app crashes :)
 	// (Assets not initialized yet)
-	var armlContent : String = ARMLParser.EMPTY
+	@Suppress("SuspiciousVarProperty")
+	private var armlContent : String = ARMLParser.EMPTY
 		get() = assets.open(armlPath).readBuffer().array().decodeToString()
 			.replace("\$myModelPath", myModelPath)
 
@@ -249,60 +253,190 @@ class SceneviewActivity : SimpleActivity() {
 			}
 		}
 
-	private val thingsToDo : ArrayList<((Session, Frame) -> Unit)> = ArrayList()
-
-	// Trackables go in here vvv
-	private val queuedAnchors : ArrayList<Trackable> = ArrayList()
-
-	// RelativeTo waiting for trackables go in here vvv
-	private val queuedRelativeAnchors : HashMap<com.simplemobiletools.camera.ar.arml.elements.Anchor, ArrayList<RelativeTo>> = HashMap()
-
-	// Assigned Trackables and RelativeTo go in here vvv
- 	private val assignedAnchors : HashMap<com.simplemobiletools.camera.ar.arml.elements.Anchor, AnchorNode> = HashMap()
-
-	// Save anchor of placed assets for the conditions
-	private val placedAssets : HashMap<VisualAsset, AnchorNode> = HashMap()
-
-	// Save modelNodes of placed models tho be created or destroyed in accordance to the conditions
-	private val modelNodes : HashMap<VisualAsset, ModelNode> = HashMap()
-
-	// Keep track of what assets are selected for the conditions
-	private val isSelected : HashMap<VisualAsset, Boolean> = HashMap()
-
-	// Assets with Conditions go here, where they are checked every frame and hidden/shown accordingly vvv
-	private val conditionalAssets : HashMap<VisualAsset, List<Condition>> = HashMap()
+	/*
+                                                            +----------+
+                                                            |  Scene   |
+                                                            +----------+
+                                                                  1
+                                                                  |
+                                                                0..*
+                                        -------------------------------------------------------------   ...
+                                        |                                 |
+                                +---------------+                 +---------------+
+                                | Trackable     |                 | Trackable     |
+                                | (Anchor Node) |                 | (Anchor Node) |
+                                +---------------+                 +---------------+
+                                      0..1
+                                        |
+                                      0..*
+               --------------------------------------------------------------   ...
+               |                    |                        |
+        +-------------+      +-------------+          +--------------+
+        | Model       |      | Model       |          | RelativeTo   |
+        | (ModelNode) |      | (ModelNode) |          | (AnchorNode) |
+        +-------------+      +-------------+          +--------------+
+                                                             |
+                                      -----------------------------------------------
+                                      |                    |                        |
+                                +-------------+      +-------------+       More RelativeTo...
+                                | Model       |      | Model       |
+                                | (ModelNode) |      | (ModelNode) |
+                                +-------------+      +-------------+
+	 */
 
 	/*
-						+----------+
-						|  Scene   |
-						+----------+
-						     |
-		   -------------------------------------------------------------   ...
-		   |                                      |
-		+---------------+                 +---------------+
-		| Trackable     |                 | Trackable     |
-		| (Anchor Node) |                 | (Anchor Node) |
-		+---------------+                 +---------------+
-		   |
-		 --------------------------------------------------------------   ...
-		 |                    |                        |
-		+-------------+   +-------------+    +--------------+
-		| Model       |   | Model       |    | RelativeTo   |
-		| (ModelNode) |   | (ModelNode) |    | (AnchorNode) |
-		+-------------+   +-------------+    +--------------+
-		                                               |
-		 -----------------------------------------------
-		 |                    |                        |
-		+-------------+   +-------------+   More RelativeTo...
-		| Model       |   | Model       |
-		| (ModelNode) |   | (ModelNode) |
-		+-------------+   +-------------+
+	          ARML        |     SceneView
+		                  |   +-------------+
+		                  |   |    Scene    |
+		                  |   +-------------+
+		                  |          |
+		                  |          v
+		                  |   +-------------+
+		                  |   |    Anchor   | (created from planes; denoted as com.google.ar.core.Anchor)
+		                  |   +-------------+
+		                  |          |
+		                  |          v
+		+-------------+   |   +-------------+
+		|   Anchor    |   |   | AnchorNode  |
+		+-------------+   |   +-------------+
+		       |          |          |
+		       |          |          | (if placed / shown)
+		       v          |          v
+		+-------------+   |   +-------------+
+		|Model/V.Asset|   |   |  ModelNode  |
+		+-------------+   |   +-------------+
 	 */
+
+	// Trackables waiting for an AnchorNode go in here vvv
+	private val queuedAnchorsHU : ArrayList<Trackable> = ArrayList()
+	private val queuedAnchorsHD : ArrayList<Trackable> = ArrayList()
+	private val queuedAnchorsV : ArrayList<Trackable> = ArrayList()
+
+	// RelativeTo waiting for Anchors go in here vvv
+	private val queuedRelativeAnchors : HashMap<Anchor, ArrayList<RelativeTo>> = HashMap()
+
+	// Save AnchorNodes of assigned Trackables and RelativeTo
+	private val assignedAnchors : HashMap<Anchor, AnchorNode> = HashMap()
+	private val Anchor.anchorNode : AnchorNode?
+		get() = this@SceneviewActivity.assignedAnchors[this]
+	private fun Anchor.setAnchorNode(anchorNode: AnchorNode) {
+		this@SceneviewActivity.assignedAnchors[this] = anchorNode
+	}
+
+	// Save VisualAssets that have conditions
+	private val conditionalVisualAssets : ArrayList<VisualAsset> = ArrayList()
+
+	// Save ModelNodes of VisualAssets
+	private val modelNodes : HashMap<VisualAsset, ModelNode> = HashMap()
+	private val VisualAsset.modelNode : ModelNode?
+		get() = this@SceneviewActivity.modelNodes[this]
+	private fun VisualAsset.setModelNode(modelNode : ModelNode) {
+		this@SceneviewActivity.modelNodes[this] = modelNode
+	}
+
+	// Save AnchorNodes of VisualAssets
+	private val anchorNodes : HashMap<VisualAsset, AnchorNode> = HashMap()
+	private val VisualAsset.anchorNode : AnchorNode?
+		get() = this@SceneviewActivity.anchorNodes[this]
+	private fun VisualAsset.setAnchorNode(anchorNode : AnchorNode) {
+		this@SceneviewActivity.anchorNodes[this] = anchorNode
+	}
+
+	// Asset is placed only when the ModelNode is a child of the AnchorNode
+	// There is no function (that I know of) that hides and shows model on command, so this is how I'll do it...
+	private val VisualAsset.isPlaced : Boolean
+		get() {
+			return if (anchorNode != null && modelNode != null)
+				anchorNode!!.childNodes.contains(modelNode!!)
+			else false
+		}
+	private fun VisualAsset.show() {
+		if (isPlaced) {
+			Log.w(TAG, "Tried to show asset that is already shown: $this")
+			return
+		}
+		if (anchorNode != null && modelNode != null) {
+			anchorNode!!.addChildNode(modelNode!!)
+			Log.d(TAG, "Showing $this")
+		}
+	}
+	private fun VisualAsset.hide() {
+		if (!isPlaced) {
+			Log.w(TAG, "Tried to hide asset that is already hidden: $this")
+			return
+		}
+		if (anchorNode != null && modelNode != null) {
+			anchorNode!!.removeChildNode(modelNode!!)
+			Log.d(TAG, "Hiding $this")
+		}
+	}
+	private fun VisualAsset.setVisibility(shown : Boolean) {
+		if (shown)
+			show()
+		else
+			hide()
+	}
+
+	// SelectedCondition: Keep track of what assets are selected
+	private val isSelected : HashMap<VisualAsset, Boolean> = HashMap()
+	private var VisualAsset.isSelected : Boolean
+		get() = this@SceneviewActivity.isSelected[this] ?: false
+		set(value) = this@SceneviewActivity.isSelected.set(this, value)
+	private fun VisualAsset.toggleSelected() {
+		this.isSelected = !this.isSelected
+		Log.d(TAG, "${if (this.isSelected) "Selected" else "Unselected" } $this")
+	}
+
+	// DistanceCondition: Keep track of the rolling average distance of the asset
+	private val averageDistance : HashMap<VisualAsset, Float> = HashMap()
+	private var VisualAsset.avgDistance : Float
+		get() = this@SceneviewActivity.averageDistance[this] ?: -1f
+		set(value) = this@SceneviewActivity.averageDistance.set(this, value)
+	private fun VisualAsset.newDistance(d: Float) {
+		this.avgDistance = (this.avgDistance * (DISTANCE_ROLLING_AVG_N-1) + d) / DISTANCE_ROLLING_AVG_N
+	}
+
+	// Keep track of functions to execute every frame (e.g. checking conditions)
+	private val thingsToDo : ArrayList<((Session, Frame) -> Unit)> = ArrayList()
+
+	private fun clearScene() {
+		val sceneView = binding.sceneView
+
+		Log.d(TAG, "Clearing scene...")
+
+		// This first
+		thingsToDo.clear()
+
+		// Clear queues
+		queuedAnchorsHU.clear()
+		queuedAnchorsHD.clear()
+		queuedAnchorsV.clear()
+		queuedRelativeAnchors.clear()
+
+		// Clear scene nodes
+		assignedAnchors.values.forEach { it.clearChildNodes() }
+		assignedAnchors.clear()
+		sceneView.clearChildNodes()
+
+		// Clear auxiliary stuff
+		conditionalVisualAssets.clear()
+		modelNodes.clear()
+		anchorNodes.clear()
+		isSelected.clear()
+
+		Log.d(TAG, "Clearing scene... DONE!")
+	}
+
+
+
 	private fun handleARML() {
 		Log.d(TAG, arml.toString())
 
-		val arElements : List<ARElement> = arml.elements
+		// Disable any update requested during processing
+		updateSceneRequested = false
 
+		// Process ARML
+		val arElements : List<ARElement> = arml.elements
 		arElements.forEach {
 			when(it) {
 				is Feature -> handleFeature(it)
@@ -310,60 +444,65 @@ class SceneviewActivity : SimpleActivity() {
 			}
 		}
 
-		// disable any update requested during processing
-		updateSceneRequested = false
-
-
-		// == Init SceneView for ARML ==
-
-		// Detect and assign anchors to elements in queue
+		// OnFrameUpdate: Detect and assign anchors to elements in queue
 		thingsToDo.add { _, frame ->
-			frame.getUpdatedPlanes()
-				.firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
-				?.let { plane ->
-					queuedAnchors.forEach {
-						addAnchorNodeToScene(plane.createAnchor(plane.centerPose), it)
-						Log.d(TAG, "Assigned anchor to $it")
+			val planes = frame.getUpdatedPlanes()
 
-						// Relative
-						copyAnchorNode(it)
-					}
-					queuedAnchors.clear()
+			val planeHU = planes.firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
+			val planeHD = planes.firstOrNull { it.type == Plane.Type.HORIZONTAL_DOWNWARD_FACING }
+			val planeV = planes.firstOrNull { it.type == Plane.Type.VERTICAL }
+
+			planeHU?.let { plane ->
+				queuedAnchorsHU.forEach {
+					addAnchorNodeToScene(plane.createAnchor(plane.centerPose), it)
+					Log.d(TAG, "Assigned anchor to $it")
+					copyAnchorNode(it) // Relative
 				}
-		}
+				queuedAnchorsHU.clear()
+			}
 
-		// Check conditions
-		thingsToDo.add { _, _ ->
-			conditionalAssets.forEach {
-				if (!placedAssets.contains(it.key)) {
-					Log.e(TAG, "${it.key} in conditionalAssets but not in placedAssets")
-				} else if (!modelNodes.contains(it.key)) {
-					Log.e(TAG, "${it.key} in conditionalAssets but not in modelNodes")
-				} else {
-					val asset = it.key
-					val anchorNode = placedAssets[asset]!!
-					val conditions = it.value
-					val modelNode = modelNodes[asset]!!
-
-					val before = anchorNode.childNodes.contains(modelNode)
-					val after = evaluateConditions(asset, conditions)
-
-					if (before != after) {
-						Log.d(TAG, "${if (!after) "Hiding" else "Showing"} $asset")
-
-						if (after) {
-							anchorNode.addChildNode(modelNode)
-						} else {
-							anchorNode.removeChildNode(modelNode)
-						}
-					}
+			planeHD?.let { plane ->
+				queuedAnchorsHD.forEach {
+					addAnchorNodeToScene(plane.createAnchor(plane.centerPose), it)
+					Log.d(TAG, "Assigned anchor to $it")
+					copyAnchorNode(it) // Relative
 				}
+				queuedAnchorsHD.clear()
+			}
+
+			planeV?.let { plane ->
+				queuedAnchorsV.forEach {
+					addAnchorNodeToScene(plane.createAnchor(plane.centerPose), it)
+					Log.d(TAG, "Assigned anchor to $it")
+					copyAnchorNode(it) // Relative
+				}
+				queuedAnchorsV.clear()
 			}
 		}
 
-		// Refresh scene when requested
+		// OnFrameUpdate: Check conditions
+		thingsToDo.add { _, _ ->
+			conditionalVisualAssets.forEach {
+
+				val asset : VisualAsset = it
+				val conditions : List<Condition> = it.conditions!!
+
+				if (asset.anchorNode == null || asset.modelNode == null) {
+					Log.e(TAG, "$asset has conditions but has no anchorNode or modelNode")
+					return@forEach
+				}
+
+				val before = asset.isPlaced
+				val after = evaluateConditions(asset, conditions)
+
+				if (before != after)
+					asset.setVisibility(after)
+			}
+		}
+
+		// OnFrameUpdate: Refresh scene when requested
 		// Only add this at the end
-		// clearScene clears thingsToDo list, so there ~~can~~ will be a problem with concurrency
+		// clearScene clears thingsToDo list, so there can and will be a problem with concurrency
 		thingsToDo.add { _, _ ->
 			if (updateSceneRequested) {
 				isLoading = true
@@ -387,12 +526,12 @@ class SceneviewActivity : SimpleActivity() {
 				is ScreenAnchor -> if (it.enabled != false) Log.d(TAG, "Got ScreenAnchor $it. Ignoring...")
 				is Geometry -> if (it.enabled != false) Log.d(TAG, "Got Geometry $it. Ignoring...")
 
-				is LowLevelFeature.FeatureAnchors.AnchorRef -> arml.elementsById[it.href].let {
-					when (it) {
-						is Trackable -> if (it.enabled != false) handleTrackable(it)
-						is RelativeTo -> if (it.enabled != false) handleRelativeTo(it)
-						is ScreenAnchor -> if (it.enabled != false) Log.d(TAG, "Got ScreenAnchor $it. Ignoring...")
-						is Geometry -> if (it.enabled != false) Log.d(TAG, "Got Geometry $it. Ignoring...")
+				is LowLevelFeature.FeatureAnchors.AnchorRef -> arml.elementsById[it.href].let { ref ->
+					when (ref) {
+						is Trackable -> if (ref.enabled != false) handleTrackable(ref)
+						is RelativeTo -> if (ref.enabled != false) handleRelativeTo(ref)
+						is ScreenAnchor -> if (ref.enabled != false) Log.d(TAG, "Got ScreenAnchor $ref. Ignoring...")
+						is Geometry -> if (ref.enabled != false) Log.d(TAG, "Got Geometry $ref. Ignoring...")
 					}
 				}
 			}
@@ -404,11 +543,19 @@ class SceneviewActivity : SimpleActivity() {
 		val configList = trackable.config.sortedBy { it.order }
 
 		configList.forEach {
-			if (it.tracker == "#genericPlaneTracker") {
-				if (!assignedAnchors.containsKey(trackable) && !queuedAnchors.contains(trackable))
-					queuedAnchors.add(trackable)
-					Log.d(TAG, "Waiting for anchor for $trackable")
+			if (it.tracker == "#genericPlaneTracker" || it.tracker == "#genericHUPlaneTracker") {
+				if (!assignedAnchors.containsKey(trackable) && !queuedAnchorsHU.contains(trackable))
+					queuedAnchorsHU.add(trackable)
 			}
+			if (it.tracker == "#genericHDPlaneTracker") {
+				if (!assignedAnchors.containsKey(trackable) && !queuedAnchorsHD.contains(trackable))
+					queuedAnchorsHD.add(trackable)
+			}
+			if (it.tracker == "#genericVPlaneTracker") {
+				if (!assignedAnchors.containsKey(trackable) && !queuedAnchorsV.contains(trackable))
+					queuedAnchorsV.add(trackable)
+			}
+			Log.d(TAG, "Waiting for anchor for $trackable")
 		}
 	}
 
@@ -424,7 +571,7 @@ class SceneviewActivity : SimpleActivity() {
 		when(other) {
 			is Trackable -> {
 				if (assignedAnchors.containsKey(other)) {
-					val otherAnchorNode = assignedAnchors[other]!!
+					val otherAnchorNode = other.anchorNode!!
 					addRelativeAnchorNode(relativeTo, otherAnchorNode)
 					Log.d(TAG, "Created $relativeTo")
 				} else {
@@ -435,7 +582,7 @@ class SceneviewActivity : SimpleActivity() {
 			}
 			is RelativeTo -> {
 				if (assignedAnchors.containsKey(other)) {
-					val otherAnchorNode = assignedAnchors[other]!!
+					val otherAnchorNode = other.anchorNode!!
 					addRelativeAnchorNode(relativeTo, otherAnchorNode)
 					Log.d(TAG, "Created $relativeTo")
 				} else {
@@ -448,8 +595,9 @@ class SceneviewActivity : SimpleActivity() {
 		}
 	}
 
-	private fun addAnchorNodeToScene(anchor: Anchor, trackable: Trackable) {
+	private fun addAnchorNodeToScene(anchor: com.google.ar.core.Anchor, trackable: Trackable) {
 		val sceneView = binding.sceneView
+
 		sceneView.addChildNode(
 			AnchorNode(sceneView.engine, anchor)
 				.apply {
@@ -458,14 +606,14 @@ class SceneviewActivity : SimpleActivity() {
 							is Model -> loadAndAddChildNode(this, it)
 						}
 					}
-					assignedAnchors[trackable] = this
+					trackable.setAnchorNode(this)
 				}
 		)
 	}
 
-	private fun copyAnchorNode(original: com.simplemobiletools.camera.ar.arml.elements.Anchor) {
+	private fun copyAnchorNode(original: Anchor) {
 		if (queuedRelativeAnchors.containsKey(original)) {
-			val originalAnchorNode = assignedAnchors[original]!!
+			val originalAnchorNode = original.anchorNode!!
 
 			queuedRelativeAnchors[original]!!.forEach { new ->
 				addRelativeAnchorNode(new, originalAnchorNode)
@@ -496,67 +644,67 @@ class SceneviewActivity : SimpleActivity() {
 
 		val newAnchorNode = AnchorNode(sceneView.engine, other.anchor)
 			.apply {
+				isEditable = true
 				other.addChildNode(this)
 				position = newPos
 				relativeTo.assets.forEach {
 					when (it) {
 						is Model -> loadAndAddChildNode(this, it)
 					}
-					assignedAnchors[relativeTo] = this
+					relativeTo.setAnchorNode(this)
 				}
 			}
 	}
 
-	private fun loadAndAddChildNode(anchor: AnchorNode, model: Model) {
+	private fun addModelToScene(anchorNode: AnchorNode, modelNode: ModelNode, model: Model) {
+		model.setAnchorNode(anchorNode)
+		model.setModelNode(modelNode)
+		model.isSelected = false
+		modelNode.onDoubleTap = { _ ->	model.toggleSelected(); true;}
+
+		if (model.conditions != null)
+		{
+			conditionalVisualAssets.add(model)
+			Log.d(TAG, "Added $model to conditionalVisualAssets")
+			if (evaluateConditions(model, model.conditions!!)) {
+				anchorNode.addChildNode(modelNode)
+				Log.d(TAG, "Placed $model")
+			}
+		}
+		else
+		{
+			anchorNode.addChildNode(modelNode)
+			Log.d(TAG, "Placed $model")
+		}
+	}
+
+	private fun loadAndAddChildNode(anchorNode: AnchorNode, model: Model) {
 		val sceneView = binding.sceneView
 
-		val modelPath = model.href
-		val scale = model.scaleVector
-		val rotation = model.rotationVector
+		lifecycleScope.launch {
+			isLoading = true
 
-		val conditions = model.conditions
+			val modelInstance : ModelInstance? = sceneView.modelLoader.loadModelInstance(model.href)
 
-		anchor.apply {
-			isEditable = true
-			lifecycleScope.launch {
-				isLoading = true
-				sceneView.modelLoader.loadModelInstance(
-					modelPath
-				)?.let { modelInstance ->
-					val modelNode = ModelNode(
-						modelInstance = modelInstance,
-						scaleToUnits = null,
-						centerOrigin = Position(0f,0f,0f)
-					).apply {
-						isEditable = true
-						this.scale = this.scale.times(scale)
-						this.rotation = this.rotation.plus(rotation)
+			modelInstance?.let {
+				val modelNode = ModelNode(
+					modelInstance = it,
+					scaleToUnits = null,
+					centerOrigin = Position(0f,0f,0f)
+				).apply {
+					isEditable = true
+					this.scale = this.scale.times(model.scaleVector)
+					this.rotation = this.rotation.plus(model.rotationVector)
 
-						placedAssets[model] = anchor
-						modelNodes[model] = this
-						isSelected[model] = false
-						anchor.onDoubleTap = { _ ->
-							isSelected[model] = !isSelected[model]!!
-							Log.d(TAG, "${if (isSelected[model]!!) "Selected" else "Unselected" } $model")
-							isSelected[model]!!
-						}
-
-						if (conditions != null) {
-							conditionalAssets[model] = conditions
-							Log.d(TAG, "Added $model to conditionalAssets")
-						}
-					}
-
-					if (conditions != null) {
-						if (evaluateConditions(model, conditions))
-							addChildNode(modelNode)
-					} else {
-						addChildNode(modelNode)
-					}
-					Log.d(TAG, "Placed $model")
+					addModelToScene(
+						anchorNode = anchorNode,
+						modelNode = this,
+						model = model
+					)
 				}
-				isLoading = false
 			}
+
+			isLoading = false
 		}
 	}
 
@@ -571,15 +719,15 @@ class SceneviewActivity : SimpleActivity() {
 	}
 
 	private fun evaluateSelectedCondition(asset: VisualAsset, condition: SelectedCondition): Boolean {
-		return isSelected[asset] == condition.selected
+		return asset.isSelected == condition.selected
 	}
 
 	private fun evaluateDistanceCondition(asset: VisualAsset, condition: DistanceCondition): Boolean {
 		val sceneView = binding.sceneView
 
-		val modelPose: Pose = placedAssets[asset]!!.anchor.pose
+		val modelPose: Pose = asset.anchorNode!!.anchor.pose
 
-		val distance = sceneView.cameraNode.pose?.distanceTo(modelPose)
+		var distance = sceneView.cameraNode.pose?.distanceTo(modelPose)
 			.let {
 				//Log.d(TAG, "Distance: $it ($asset)");
 				return@let it
@@ -587,32 +735,35 @@ class SceneviewActivity : SimpleActivity() {
 				//Log.d(TAG, "Distance: unavailable ($asset)");
 				return false
 			}
+		//asset.newDistance(distance)
+		//distance = asset.avgDistance
 
+		// Smooth transitions; Avoid showing and hiding model repeatedly; Like a rubber band
+		val deadZone = 0.2
+
+		/*
+			0 ----- Hidden ----- | *(1-deadzone) | Min | *(1+deadzone) | ----- Shown ----- | ...
+
+			- If shown, hide when <*(1-deadzone)
+			- If hidden, show when >*(1+deadzone) => keep hidden while <*(1+deadzone)
+		 */
 		if (condition.min != null)
-			if (distance < condition.min)
+			if (distance < (if (asset.isPlaced) condition.min *(1-deadZone) else condition.min * (1+deadZone)))
 				return false
 
+		/*
+			... ----- Shown ----- | *(1-deadzone) | Max | *(1+deadzone) | ----- Hidden ----- | ...
+
+			- If shown, hide when >*(1+deadzone)
+			- If hidden, show when <*(1-deadzone) => keep hidden while >*(1-deadzone)
+		 */
 		if (condition.max != null)
-			if (distance > condition.max)
+			if (distance > (if (asset.isPlaced) condition.max *(1+deadZone) else condition.max * (1-deadZone)))
 				return false
 
 		return true
 	}
 
-	private fun clearScene() {
-		Log.d(TAG, "Clearing scene...")
-		val sceneView = binding.sceneView
-		queuedAnchors.clear()
-		assignedAnchors.values.forEach {
-			it.clearChildNodes()
-		}
-		assignedAnchors.clear()
-		thingsToDo.clear()
-		sceneView.clearChildNodes()
-
-		modelNodes.clear()
-		placedAssets.clear()
-		isSelected.clear()
-		conditionalAssets.clear()
-	}
+	// Log filter:
+	// package:mine ARML | Analyzer  | QR | (level:error & -tag:Camera & -tag:OpenGLRenderer & -message:static_feature & -message:bundle_adjustment & -message:hit_test & -message:depth & -message:IMU & -message:landmarks & -message:stream)
 }
