@@ -1,6 +1,7 @@
 package com.simplemobiletools.camera.ar.arml.elements
 
 import org.simpleframework.xml.Attribute
+import kotlin.random.Random
 
 
 abstract class ARElement internal constructor(
@@ -10,7 +11,7 @@ abstract class ARElement internal constructor(
 
 	internal constructor(root: ARML, other: ARElement) : this(root, other.base)
 
-	val id: String? = base.id
+	val id: String = base.id ?: Random(System.currentTimeMillis()).nextBytes(16).toString()
 
 	abstract val elementsById: HashMap<String, ARElement>
 

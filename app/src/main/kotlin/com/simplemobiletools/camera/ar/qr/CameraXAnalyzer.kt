@@ -15,7 +15,7 @@ import com.google.zxing.BinaryBitmap
 import com.google.zxing.NotFoundException
 import com.google.zxing.Result
 import com.google.zxing.qrcode.QRCodeReader
-import com.simplemobiletools.camera.activities.ARCoreActivity
+import com.simplemobiletools.camera.activities.SceneviewActivity
 import com.simplemobiletools.camera.ar.arml.ARMLParser
 import com.simplemobiletools.camera.ar.arml.elements.ARML
 
@@ -98,11 +98,7 @@ class CameraXAnalyzer(
 							val armlContent = doc.textContent
 							 */
 							val armlContent = context.assets.open("armlexamples/$url").readBytes().decodeToString()
-							val arml: ARML? = ARMLParser().loads(armlContent)
-							if (arml == null) {
-								Log.d("CameraXAnalyzer", "Invalid ARML!")
-								break
-							}
+							val arml: ARML = ARMLParser().loads(armlContent)
 
 							val validation = arml.validate()
 							if (!validation.first) {
@@ -111,7 +107,7 @@ class CameraXAnalyzer(
 							}
 
 							Log.d("CameraXAnalyzer", arml.toString())
-							//launchARActivity(armlContent)
+							launchARActivity(armlContent)
 							
 						} catch (e : Exception) {
 							Log.e("CameraXAnalyzer", "Failed to read ARML!", e)
@@ -131,8 +127,8 @@ class CameraXAnalyzer(
 	}
 
 	private fun launchARActivity(armlContent : String) {
-		val intent = Intent(context, ARCoreActivity::class.java)
-		intent.putExtra("armlContent", armlContent)
+		val intent = Intent(context, SceneviewActivity::class.java)
+		intent.putExtra(Intent.EXTRA_TEXT, armlContent)
 		context.startActivity(intent)
 	}
 }

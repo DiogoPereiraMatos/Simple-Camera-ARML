@@ -31,6 +31,7 @@ import io.github.sceneview.model.ModelInstance
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.utils.readBuffer
 import kotlinx.coroutines.launch
+import java.util.EnumMap
 
 
 class SceneviewActivity : SimpleActivity() {
@@ -42,22 +43,40 @@ class SceneviewActivity : SimpleActivity() {
 
 	private val binding by viewBinding(ActivitySceneviewBinding::inflate)
 
-	private var myModelPath : String = "models/damaged_helmet.glb"
-		set(value) {
-			if (field != value) {
-				Log.d(TAG, "Set virtualObjectName to $value")
-				updateSceneRequested = true
-			}
-			field = value
-		}
 	private var armlPath : String = "armlexamples/empty.xml"
+		// On update, read new arml content
 		set(value) {
 			if (field != value) {
 				Log.d(TAG, "Set armlPath to $value")
+				armlContent = assets.open(value).readBuffer().array().decodeToString()
 				updateSceneRequested = true
 			}
 			field = value
 		}
+	private var armlContent : String = ARMLParser.EMPTY
+		// On update, parse new ARML
+		set(value) {
+			if (field != value) {
+				try {
+					val result : ARML = ARMLParser().loads(value)
+
+					val validation = result.validate()
+					if (!validation.first) {
+						Log.e(TAG, "Invalid ARML: ${validation.second}")
+						arml = ARML()
+					}
+					arml = result
+				} catch (e : Exception) {
+					Log.e(TAG, "Failed to parse ARML.", e)
+					arml = ARML()
+				}
+				Log.d(TAG, "Set arml to $arml")
+				updateSceneRequested = true
+			}
+			field = value
+		}
+	private var arml : ARML = ARML()
+
 	private var updateSceneRequested : Boolean = false
 
 	private var isLoading = false
@@ -66,7 +85,7 @@ class SceneviewActivity : SimpleActivity() {
 			binding.loadingView.isGone = !value
 		}
 
-	private var trackingFailureReason: TrackingFailureReason? = null
+	private var trackingFailureReason: String? = null
 		set(value) {
 			if (field != value) {
 				field = value
@@ -75,7 +94,7 @@ class SceneviewActivity : SimpleActivity() {
 		}
 
 	private fun updateInstructions() {
-		binding.instructionText.text = trackingFailureReason?.getDescription(this)
+		binding.instructionText.text = trackingFailureReason
 	}
 
 	override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,31 +105,27 @@ class SceneviewActivity : SimpleActivity() {
 
 		setContentView(binding.root)
 
+		// UI stuff...
 		window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
 		//window.setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-
 		WindowCompat.setDecorFitsSystemWindows(window, false)
 		ViewCompat.setOnApplyWindowInsetsListener(binding.rootView) { _, windowInsets ->
 			val safeInsetTop = windowInsets.displayCutout?.safeInsetTop ?: 0
-
 			binding.settings.updateLayoutParams<ViewGroup.MarginLayoutParams> {
 				topMargin = safeInsetTop
 			}
-
 			binding.arSettingsButton.updateLayoutParams<ViewGroup.MarginLayoutParams> {
 				topMargin = safeInsetTop
 			}
-
 			//val safeInsetBottom = windowInsets.displayCutout?.safeInsetBottom ?: 0
 			//val marginBottom = safeInsetBottom + navigationBarHeight + resources.getDimensionPixelSize(com.simplemobiletools.commons.R.dimen.bigger_margin)
-
 			WindowInsetsCompat.CONSUMED
 		}
-
 		val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
 		windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 		windowInsetsController.hide(WindowInsetsCompat.Type.statusBars() /*or WindowInsetsCompat.Type.navigationBars()*/)
 
+		// Setup
 		binding.apply {
 			setupSceneView()
 			setupButtons()
@@ -118,6 +133,7 @@ class SceneviewActivity : SimpleActivity() {
 
 		// ARML
 		isLoading = true
+		armlContent = intent.getStringExtra(Intent.EXTRA_TEXT) ?: ARMLParser.EMPTY
 		handleARML()
 		isLoading = false
 	}
@@ -143,18 +159,18 @@ class SceneviewActivity : SimpleActivity() {
 	private fun setupSceneView() {
 		val sceneView = binding.sceneView
 		sceneView.apply {
-			planeRenderer.isEnabled = false
+			planeRenderer.isEnabled = true
 			configureSession { session, config ->
 				config.depthMode = when (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
 					true -> Config.DepthMode.AUTOMATIC
 					else -> Config.DepthMode.DISABLED
 				}
-				config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
+				config.instantPlacementMode = Config.InstantPlacementMode.LOCAL_Y_UP
 				config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
 			}
 			onSessionUpdated = { session, frame -> thingsToDo.forEach {it(session, frame)} }
 			onTrackingFailureChanged = { reason ->
-				this@SceneviewActivity.trackingFailureReason = reason
+				this@SceneviewActivity.trackingFailureReason = reason?.getDescription(applicationContext)
 			}
 		}
 	}
@@ -168,7 +184,6 @@ class SceneviewActivity : SimpleActivity() {
 				setOnMenuItemClickListener { item ->
 					when (item.itemId) {
 						R.id.refresh_scene -> updateSceneRequested=true
-						R.id.model_settings -> launchModelSettingsMenuDialog()
 						R.id.arml_settings -> launchARMLSettingsMenuDialog()
 						else -> null
 					} != null
@@ -180,7 +195,6 @@ class SceneviewActivity : SimpleActivity() {
 	}
 
 	private fun listAssets(path: String): ArrayList<String>? {
-
 		val fileOrFolder = assets.list(path)!!
 		if (fileOrFolder.isEmpty())
 			return null
@@ -199,19 +213,6 @@ class SceneviewActivity : SimpleActivity() {
 		return allAssets
 	}
 
-	private fun launchModelSettingsMenuDialog() {
-		val models = listAssets("models")!!.filter { filename ->
-			filename.endsWith(".glb", true)
-				||
-				filename.endsWith(".gltf", true)
-		}.toTypedArray()
-
-		AlertDialog.Builder(this)
-			.setTitle("Model")
-			.setSingleChoiceItems(models, models.indexOf(myModelPath)) { _, which -> myModelPath = models[which] }
-			.show()
-	}
-
 	private fun launchARMLSettingsMenuDialog() {
 		val strings = listAssets("armlexamples")!!
 			.toTypedArray()
@@ -222,40 +223,18 @@ class SceneviewActivity : SimpleActivity() {
 			.show()
 	}
 
-	fun launchSettings() {
-		val intent = Intent(this, SettingsActivity::class.java)
-		startActivity(intent)
+	private fun launchSettings() {
+		Intent(this, SettingsActivity::class.java).also {
+			startActivity(it)
+		}
 	}
 
 
 	//=== ARML ===//
-	// Needs to be var and be initialized as empty, or app crashes :)
-	// (Assets not initialized yet)
-	@Suppress("SuspiciousVarProperty")
-	private var armlContent : String = ARMLParser.EMPTY
-		get() = assets.open(armlPath).readBuffer().array().decodeToString()
-			.replace("\$myModelPath", myModelPath)
-
-	val arml : ARML
-		get() {
-			try {
-				val result : ARML = ARMLParser().loads(armlContent)
-
-				val validation = result.validate()
-				if (!validation.first) {
-					Log.e(TAG, "Invalid ARML: ${validation.second}")
-					return ARML()
-				}
-				return result
-			} catch (e : Exception) {
-				Log.e(TAG, "Failed to parse ARML.", e)
-				return ARML()
-			}
-		}
 
 	/*
                                                             +----------+
-                                                            |  Scene   |
+                                                            |   ARML   |
                                                             +----------+
                                                                   1
                                                                   |
@@ -285,20 +264,19 @@ class SceneviewActivity : SimpleActivity() {
 	 */
 
 	/*
-	          ARML        |     SceneView
-		                  |   +-------------+
-		                  |   |    Scene    |
-		                  |   +-------------+
-		                  |          |
-		                  |          v
-		                  |   +-------------+
-		                  |   |    Anchor   | (created from planes; denoted as com.google.ar.core.Anchor)
-		                  |   +-------------+
-		                  |          |
-		                  |          v
+	          ARML        |      SceneView
 		+-------------+   |   +-------------+
-		|   Anchor    |   |   | AnchorNode  |
+		|     ARML    |   |   |    Scene    |
 		+-------------+   |   +-------------+
+		       |          |          |
+		       v          |          |
+       (Anchor as in:     |          |
+        - Trackable       |          |
+        - ScreenAnchor    |          |                                       (detected by arcore)
+        - ...)		      |          v       (com.google.ar.core.Anchor)  (com.google.ar.core.Trackable)
+		+-------------+   |   +-------------+     +-------------+          +----------------------+
+		|   Anchor    |   |   | AnchorNode  | <-- |    Anchor   | <------- | Trackable (eg Plane) |
+		+-------------+   |   +-------------+     +-------------+          +----------------------+
 		       |          |          |
 		       |          |          | (if placed / shown)
 		       v          |          v
@@ -308,9 +286,7 @@ class SceneviewActivity : SimpleActivity() {
 	 */
 
 	// Trackables waiting for an AnchorNode go in here vvv
-	private val queuedAnchorsHU : ArrayList<Trackable> = ArrayList()
-	private val queuedAnchorsHD : ArrayList<Trackable> = ArrayList()
-	private val queuedAnchorsV : ArrayList<Trackable> = ArrayList()
+	private val queuedAnchors : EnumMap<Plane.Type, ArrayList<Trackable>> = EnumMap(Plane.Type::class.java)
 
 	// RelativeTo waiting for Anchors go in here vvv
 	private val queuedRelativeAnchors : HashMap<Anchor, ArrayList<RelativeTo>> = HashMap()
@@ -408,9 +384,7 @@ class SceneviewActivity : SimpleActivity() {
 		thingsToDo.clear()
 
 		// Clear queues
-		queuedAnchorsHU.clear()
-		queuedAnchorsHD.clear()
-		queuedAnchorsV.clear()
+		queuedAnchors.values.forEach { it.clear() }
 		queuedRelativeAnchors.clear()
 
 		// Clear scene nodes
@@ -435,74 +409,32 @@ class SceneviewActivity : SimpleActivity() {
 		// Disable any update requested during processing
 		updateSceneRequested = false
 
+		// Initialize queues
+		Plane.Type.entries.forEach { type ->
+			queuedAnchors.putIfAbsent(type, ArrayList())
+		}
+
 		// Process ARML
 		val arElements : List<ARElement> = arml.elements
 		arElements.forEach {
 			when(it) {
 				is Feature -> handleFeature(it)
 				is Trackable -> handleTrackable(it)
+				else -> Log.w(TAG, "Element is not supported: $it")
 			}
 		}
 
 		// OnFrameUpdate: Detect and assign anchors to elements in queue
 		thingsToDo.add { _, frame ->
 			val planes = frame.getUpdatedPlanes()
-
-			val planeHU = planes.firstOrNull { it.type == Plane.Type.HORIZONTAL_UPWARD_FACING }
-			val planeHD = planes.firstOrNull { it.type == Plane.Type.HORIZONTAL_DOWNWARD_FACING }
-			val planeV = planes.firstOrNull { it.type == Plane.Type.VERTICAL }
-
-			planeHU?.let { plane ->
-				queuedAnchorsHU.forEach {
-					addAnchorNodeToScene(plane.createAnchor(plane.centerPose), it)
-					Log.d(TAG, "Assigned anchor to $it")
-					copyAnchorNode(it) // Relative
-				}
-				queuedAnchorsHU.clear()
-			}
-
-			planeHD?.let { plane ->
-				queuedAnchorsHD.forEach {
-					addAnchorNodeToScene(plane.createAnchor(plane.centerPose), it)
-					Log.d(TAG, "Assigned anchor to $it")
-					copyAnchorNode(it) // Relative
-				}
-				queuedAnchorsHD.clear()
-			}
-
-			planeV?.let { plane ->
-				queuedAnchorsV.forEach {
-					addAnchorNodeToScene(plane.createAnchor(plane.centerPose), it)
-					Log.d(TAG, "Assigned anchor to $it")
-					copyAnchorNode(it) // Relative
-				}
-				queuedAnchorsV.clear()
-			}
+			assignPlanes(planes)
 		}
 
 		// OnFrameUpdate: Check conditions
-		thingsToDo.add { _, _ ->
-			conditionalVisualAssets.forEach {
-
-				val asset : VisualAsset = it
-				val conditions : List<Condition> = it.conditions!!
-
-				if (asset.anchorNode == null || asset.modelNode == null) {
-					Log.e(TAG, "$asset has conditions but has no anchorNode or modelNode")
-					return@forEach
-				}
-
-				val before = asset.isPlaced
-				val after = evaluateConditions(asset, conditions)
-
-				if (before != after)
-					asset.setVisibility(after)
-			}
-		}
+		thingsToDo.add { _, _ -> conditionalVisualAssets.forEach { checkCondition(it) } }
 
 		// OnFrameUpdate: Refresh scene when requested
-		// Only add this at the end
-		// clearScene clears thingsToDo list, so there can and will be a problem with concurrency
+		// Only add this at the end. clearScene clears thingsToDo list, so there will be a problem with concurrency
 		thingsToDo.add { _, _ ->
 			if (updateSceneRequested) {
 				isLoading = true
@@ -514,27 +446,56 @@ class SceneviewActivity : SimpleActivity() {
 		}
 	}
 
+	private fun assignPlanes(planes: Collection<Plane>) {
+		val types = Plane.Type.entries
+
+		types.forEach { type ->
+			val plane = planes.firstOrNull { it.type == type }
+			plane?.let { it ->
+				queuedAnchors[type]!!.forEach { trackable ->
+					addAnchorNodeToScene(plane.createAnchor(plane.centerPose), trackable)
+					Log.d(TAG, "Assigned anchor to $it")
+					copyAnchorNode(trackable) // Relative
+				}
+				queuedAnchors[type]!!.clear()
+			}
+		}
+	}
+
+	private fun checkCondition(asset: VisualAsset) {
+		val conditions : List<Condition> = asset.conditions!!
+
+		if (asset.anchorNode == null || asset.modelNode == null) {
+			Log.e(TAG, "$asset has conditions but has no anchorNode or modelNode")
+			return
+		}
+
+		val before = asset.isPlaced
+		val after = evaluateConditions(asset, conditions)
+
+		if (before != after)
+			asset.setVisibility(after)
+	}
+
 	private fun handleFeature(feature: Feature) {
 		Log.d(TAG, "Got Feature $feature")
 		if (feature.enabled == false) return
-		val anchors = feature.anchors
+		feature.anchors.forEach { handleAnchor(it) }
+	}
 
-		anchors.forEach {
-			when(it) {
-				is Trackable -> if (it.enabled != false) handleTrackable(it)
-				is RelativeTo -> if (it.enabled != false) handleRelativeTo(it)
-				is ScreenAnchor -> if (it.enabled != false) Log.d(TAG, "Got ScreenAnchor $it. Ignoring...")
-				is Geometry -> if (it.enabled != false) Log.d(TAG, "Got Geometry $it. Ignoring...")
+	private fun handleAnchor(anchor: Any) {
+		when(anchor) {
+			is Trackable -> if (anchor.enabled != false) handleTrackable(anchor)
+			is RelativeTo -> if (anchor.enabled != false) handleRelativeTo(anchor)
+			is ScreenAnchor -> if (anchor.enabled != false) handleScreenAnchor(anchor)
+			is Geometry -> if (anchor.enabled != false) handleGeometry(anchor)
+			is LowLevelFeature.FeatureAnchors.AnchorRef -> handleAnchorRef(anchor)
+		}
+	}
 
-				is LowLevelFeature.FeatureAnchors.AnchorRef -> arml.elementsById[it.href].let { ref ->
-					when (ref) {
-						is Trackable -> if (ref.enabled != false) handleTrackable(ref)
-						is RelativeTo -> if (ref.enabled != false) handleRelativeTo(ref)
-						is ScreenAnchor -> if (ref.enabled != false) Log.d(TAG, "Got ScreenAnchor $ref. Ignoring...")
-						is Geometry -> if (ref.enabled != false) Log.d(TAG, "Got Geometry $ref. Ignoring...")
-					}
-				}
-			}
+	private fun ArrayList<Trackable>.putIfAbsent(element: Trackable) {
+		if (!this.contains(element)) {
+			this.add(element)
 		}
 	}
 
@@ -542,19 +503,15 @@ class SceneviewActivity : SimpleActivity() {
 		Log.d(TAG, "Got Trackable $trackable")
 		val configList = trackable.config.sortedBy { it.order }
 
+		val trackerMap = HashMap<String, Plane.Type>()
+		trackerMap["#genericPlaneTracker"] = Plane.Type.HORIZONTAL_UPWARD_FACING
+		trackerMap["#genericHUPlaneTracker"] = Plane.Type.HORIZONTAL_UPWARD_FACING
+		trackerMap["#genericHDPlaneTracker"] = Plane.Type.HORIZONTAL_DOWNWARD_FACING
+		trackerMap["#genericVPlaneTracker"] = Plane.Type.VERTICAL
+
 		configList.forEach {
-			if (it.tracker == "#genericPlaneTracker" || it.tracker == "#genericHUPlaneTracker") {
-				if (!assignedAnchors.containsKey(trackable) && !queuedAnchorsHU.contains(trackable))
-					queuedAnchorsHU.add(trackable)
-			}
-			if (it.tracker == "#genericHDPlaneTracker") {
-				if (!assignedAnchors.containsKey(trackable) && !queuedAnchorsHD.contains(trackable))
-					queuedAnchorsHD.add(trackable)
-			}
-			if (it.tracker == "#genericVPlaneTracker") {
-				if (!assignedAnchors.containsKey(trackable) && !queuedAnchorsV.contains(trackable))
-					queuedAnchorsV.add(trackable)
-			}
+			val planeType = trackerMap[it.tracker]
+			queuedAnchors[planeType]!!.putIfAbsent(trackable)
 			Log.d(TAG, "Waiting for anchor for $trackable")
 		}
 	}
@@ -564,7 +521,7 @@ class SceneviewActivity : SimpleActivity() {
 
 		val other = arml.elementsById[relativeTo.ref]
 		if (other == null) {
-			Log.e(TAG, "RelativeTo $relativeTo trying to reference an element that does not exist (yet?).")
+			Log.w(TAG, "RelativeTo $relativeTo trying to reference an element that does not exist (yet?).")
 			return
 		}
 
@@ -591,7 +548,25 @@ class SceneviewActivity : SimpleActivity() {
 					Log.d(TAG, "Waiting for anchor for $relativeTo, aka $other")
 				}
 			}
-			else -> Log.e(TAG, "Got a RelativeTo referencing $other. That type is not supported for now.")
+			else -> Log.w(TAG, "Got a RelativeTo referencing $other. That type is not supported for now.")
+		}
+	}
+
+	//TODO
+	private fun handleScreenAnchor(screenAnchor: ScreenAnchor) {
+		Log.w(TAG, "Got ScreenAnchor $screenAnchor. Ignoring...")
+	}
+
+	//TODO
+	private fun handleGeometry(geometry: Geometry) {
+		Log.w(TAG, "Got Geometry $geometry. Ignoring...")
+	}
+
+	private fun handleAnchorRef(ref: LowLevelFeature.FeatureAnchors.AnchorRef) {
+		if (arml.elementsById.containsKey(ref.href))
+			handleAnchor(arml.elementsById[ref.href]!!)
+		else {
+			Log.w(TAG, "Reference to unknown Anchor: ${ref.href}. Ignoring...")
 		}
 	}
 

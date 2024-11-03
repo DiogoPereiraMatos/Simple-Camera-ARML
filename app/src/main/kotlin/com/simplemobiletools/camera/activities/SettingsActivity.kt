@@ -1,6 +1,7 @@
 package com.simplemobiletools.camera.activities
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -118,8 +119,10 @@ class SettingsActivity : SimpleActivity() {
         }
 
         settingsLanguageHolder.setOnClickListener {
-            launchChangeAppLanguageIntent()
-        }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+				launchChangeAppLanguageIntent()
+			}
+		}
     }
 
     private fun launchAbout() {
