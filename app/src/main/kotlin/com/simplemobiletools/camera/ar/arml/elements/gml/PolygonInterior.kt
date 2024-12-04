@@ -1,29 +1,29 @@
 package com.simplemobiletools.camera.ar.arml.elements.gml
 
 import com.simplemobiletools.camera.ar.arml.elements.ARML
+import com.simplemobiletools.camera.ar.arml.elements.SUCCESS
 import org.simpleframework.xml.Element
 import org.simpleframework.xml.Namespace
 import org.simpleframework.xml.Root
 
-class PolygonInterior internal constructor(
-	private val root: ARML,
-	private val base: LowLevelPolygonInterior
-) {
+class PolygonInterior {
+	var ring: LinearRing
 
-	internal constructor(root: ARML, other: PolygonInterior) : this(root, other.base)
+	constructor(ring: LinearRing) {
+		this.ring = ring
+	}
 
-	val ring : LinearRing = LinearRing(root, base.ring)
+	constructor(other: PolygonInterior) : this(other.ring)
+
+	fun validate(): Pair<Boolean, String> = SUCCESS
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(ring=$ring)"
 	}
 
-	fun validate(): Pair<Boolean, String> {
-		return Pair(true, "Success")
-	}
+
+	internal constructor(root: ARML, base: LowLevelPolygonInterior) : this(LinearRing(root, base.ring))
 }
-
-
 
 
 @Namespace(reference = "http://www.opengis.net/gml/3.2", prefix = "gml")

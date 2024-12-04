@@ -5,44 +5,68 @@ import org.simpleframework.xml.Element
 import org.simpleframework.xml.Namespace
 import org.simpleframework.xml.Root
 
-class Label internal constructor(
-	private val root: ARML,
-	private val base: LowLevelLabel
-) : VisualAsset2D(root, base) {
+enum class HyperlinkBehaviour {
+	BLOCK,
+	BLANK,
+	SELF;
 
-	internal constructor(root: ARML, other: Label) : this(root, other.base)
+	override fun toString(): String {
+		return this.name.lowercase()
+	}
+}
 
-	val href: String? = base.href?.href
-	val src: String? = base.src
-	val hyperlinkBehavior: String? = base.hyperlinkBehavior
-	val viewportWidth: Int? = base.viewportWidth
+class Label : VisualAsset2D {
+	override val arElementType = ARElementType.LABEL
+
+	var href: String? = null
+	var src: String? = null
+	var hyperlinkBehavior: HyperlinkBehaviour = HyperlinkBehaviour.BLANK
+	var viewportWidth: Int = 256
+		get() = if (field < 0) 256 else field
+
+	constructor() : super()
+
+	constructor(other: Label) : super(other) {
+		this.href = other.href
+		this.src = other.src
+		this.hyperlinkBehavior = other.hyperlinkBehavior
+		this.viewportWidth = other.viewportWidth
+	}
 
 	override val elementsById: HashMap<String, ARElement> = HashMap()
 
 	override fun validate(): Pair<Boolean, String> {
-		val result = super.validate(); if (!result.first) return result
-		if (hyperlinkBehavior != null) if (hyperlinkBehavior.lowercase() !in arrayOf(
-				"block",
-				"blank",
-				"self"
+		super.validate().let { if (!it.first) return it }
+
+		if (viewportWidth <= 0)
+			return Pair(
+				false,
+				"\"viewportWidth\" element in ${this::class.simpleName} must be positive, got $viewportWidth"
 			)
-		) return Pair(
-			false,
-			"Expected \"block\", \"blank\", or \"self\" for \"hyperlinkBehavior\" element in ${this::class.simpleName}, got \"$hyperlinkBehavior\""
-		)
-		if (viewportWidth != null) if (viewportWidth <= 0) return Pair(
-			false,
-			"\"viewportWidth\" element in ${this::class.simpleName} must be positive, got $viewportWidth"
-		)
-		return Pair(true, "Success")
+
+		return SUCCESS
 	}
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions,width=\"$width\",height=\"$height\",orientationMode=\"$orientationMode\",backside=\"$backside\",href=\"$href\",src=\"$src\",hyperlinkBehavior=\"$hyperlinkBehavior\",viewportWidth=$viewportWidth)"
 	}
+
+
+	internal constructor(root: ARML, base: LowLevelLabel) : super(root, base) {
+		this.href = base.href?.href
+		this.src = base.src
+		this.viewportWidth = base.viewportWidth ?: 256
+
+		if (base.hyperlinkBehavior != null) {
+			try {
+				this.hyperlinkBehavior = HyperlinkBehaviour.valueOf(base.hyperlinkBehavior!!.uppercase())
+			} catch (e: IllegalArgumentException) {
+				val possibleValues = HyperlinkBehaviour.entries.map { it.toString() }
+				throw Exception("Expected one of $possibleValues for \"hyperlinkBehavior\" element in ${this::class.simpleName}, got \"${base.hyperlinkBehavior}\"")
+			}
+		}
+	}
 }
-
-
 
 
 @Root(name = "Label", strict = true)

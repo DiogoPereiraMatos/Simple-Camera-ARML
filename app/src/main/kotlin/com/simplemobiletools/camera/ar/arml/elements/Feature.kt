@@ -1,69 +1,62 @@
 package com.simplemobiletools.camera.ar.arml.elements
 
-import org.simpleframework.xml.Attribute
-import org.simpleframework.xml.Element
-import org.simpleframework.xml.ElementList
-import org.simpleframework.xml.ElementListUnion
-import org.simpleframework.xml.Namespace
-import org.simpleframework.xml.Root
+import org.simpleframework.xml.*
 
+class Feature : ARElement {
+	override val arElementType: ARElementType = ARElementType.FEATURE
 
-class Feature internal constructor(
-	private val root: ARML,
-	private val base: LowLevelFeature
-) : ARElement(root, base) {
+	var name: String? = null
+	var description: String? = null
+	var enabled: Boolean = true
+	val metadata: ArrayList<String> = ArrayList() //TODO: Any XML
+	val anchors: ArrayList<Anchor> = ArrayList()
 
-	internal constructor(root: ARML, other: Feature) : this(root, other.base)
-
-	val name: String? = base.name
-	val description: String? = base.description
-	val enabled: Boolean? = base.enabled
-	val metadata: List<String>? = base.metadata
-
-	val anchors: ArrayList<Any>
-		get() {
-			val result = ArrayList<Any>()
-			if (base.anchors != null) {
-				result.addAll(base.anchors!!.anchorRefs)
-				base.anchors!!.anchors.forEach {
-					when(it) {
-						is LowLevelScreenAnchor -> result.add(ScreenAnchor(root, it))
-						is LowLevelGeometry -> result.add(Geometry(root, it))
-						is LowLevelRelativeTo -> result.add(RelativeTo(root, it))
-						is LowLevelTrackable -> result.add(Trackable(root, it))
-						else -> throw Exception("Unexpected Feature Anchor Type: $it")
-					}
-				}
-			}
-			return result
-		}
+	constructor() : super()
 
 	override val elementsById: HashMap<String, ARElement>
 		get() {
-			val result: HashMap<String, ARElement> = HashMap()
+			val result = HashMap<String, ARElement>()
 			anchors.forEach {
-				when(it) {
-					is ScreenAnchor -> { it.id?.let { id -> result[id] = it}; result.putAll(it.elementsById) }
-					is Geometry -> { it.id?.let { id -> result[id] = it}; result.putAll(it.elementsById) }
-					is RelativeTo -> { it.id?.let { id -> result[id] = it}; result.putAll(it.elementsById) }
-					is Trackable -> { it.id?.let { id -> result[id] = it}; result.putAll(it.elementsById) }
-					else -> throw Exception("Unexpected Feature Anchor Type: $it")
-				}
+				result[it.id] = it
+				result.putAll(it.elementsById)
 			}
 			return result
 		}
+
+	override fun validate(): Pair<Boolean, String> {
+		anchors.forEach { anchor -> anchor.validate().let { if (!it.first) return it } }
+		return SUCCESS
+	}
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(id=\"$id\",name=\"$name\",description=\"$description\",enabled=$enabled,metadata=$metadata,anchors=$anchors)"
 	}
 
-	override fun validate(): Pair<Boolean, String> {
-		anchors.filterIsInstance(Anchor::class.java).forEach { val result1 = it.validate(); if (!result1.first) return result1 }
-		return Pair(true, "Success")
+
+	internal constructor(root: ARML, base: LowLevelFeature) : super(base) {
+		this.name = base.name
+		this.description = base.description
+		this.enabled = base.enabled ?: true
+		base.metadata?.let { this.metadata.replaceAllWith(it) }
+
+		val result = ArrayList<Anchor>()
+		base.anchors?.anchors?.forEach {
+			when (it) {
+				is LowLevelScreenAnchor -> result.add(ScreenAnchor(root, it))
+				is LowLevelGeometry -> result.add(Geometry(root, it))
+				is LowLevelRelativeTo -> result.add(RelativeTo(root, it))
+				is LowLevelTrackable -> result.add(Trackable(root, it))
+				else -> throw Exception("Unexpected Feature Anchor Type: $it")
+			}
+		}
+		base.anchors?.anchorRefs?.forEach {
+			val referred = root.elementsById[it.href] ?: throw Exception("Reference to unknown element: ${it.href}")
+			if (referred !is Anchor) throw Exception("${it.href} Expected reference to anchor but got: $referred")
+			result.add(referred)
+		}
+		this.anchors.replaceAllWith(result)
 	}
 }
-
-
 
 
 @Root(name = "Feature", strict = true)
@@ -76,7 +69,7 @@ internal class LowLevelFeature : LowLevelARElement() {
 	var description: String? = null
 
 	@field:Element(name = "enabled", required = false)
-	var enabled: Boolean? = true
+	var enabled: Boolean? = null
 
 	// TODO: Any XML
 	@field:ElementList(name = "metadata", required = false, inline = false)
@@ -88,10 +81,10 @@ internal class LowLevelFeature : LowLevelARElement() {
 	internal class FeatureAnchors {
 
 		@field:ElementList(name = "anchorRef", type = AnchorRef::class, inline = true, required = false)
-		var anchorRefs: List<AnchorRef> = ArrayList()
+		var anchorRefs: List<AnchorRef>? = null
 
 		@Root(name = "anchorRef", strict = true)
-		class AnchorRef {
+		internal class AnchorRef {
 			@Namespace(reference = "http://www.w3.org/1999/xlink", prefix = "xlink")
 			@field:Attribute(name = "href", required = true)
 			lateinit var href: String
@@ -105,6 +98,6 @@ internal class LowLevelFeature : LowLevelARElement() {
 			ElementList(name = "RelativeTo", type = LowLevelRelativeTo::class, inline = true, required = false),
 			ElementList(name = "Trackable", type = LowLevelTrackable::class, inline = true, required = false),
 		)
-		var anchors: List<LowLevelAnchor> = ArrayList()
+		var anchors: List<LowLevelAnchor>? = null
 	}
 }

@@ -2,40 +2,53 @@ package com.simplemobiletools.camera.ar.arml.elements
 
 import org.simpleframework.xml.Element
 
-abstract class VisualAsset2D internal constructor(
-	private val root: ARML,
-	private val base: LowLevelVisualAsset2D
-) : VisualAsset(root, base) {
+enum class OrientationMode {
+	USER,
+	ABSOLUTE,
+	AUTO;
 
-	internal constructor(root: ARML, other: VisualAsset2D) : this(root, other.base)
+	override fun toString(): String {
+		return this.name.lowercase()
+	}
+}
 
-	val width: String? = base.width
-	val height: String? = base.height
-	val orientationMode: String? = base.orientationMode
-	val backside: String? = base.backside
+abstract class VisualAsset2D : VisualAsset {
+	var width: String? = null
+	var height: String? = null
+	var orientationMode: OrientationMode? = null
+	var backside: String? = null
 
-	override fun validate(): Pair<Boolean, String> {
-		if (orientationMode != null) if (orientationMode.lowercase() !in arrayOf(
-				"user",
-				"absolute",
-				"auto"
-			)
-		) return Pair(
-			false,
-			"Expected \"user\", \"absolute\", or \"auto\" for \"orientationMode\" element in ${this::class.simpleName}, got \"$orientationMode\""
-		)
-		return Pair(true, "Success")
+	constructor() : super()
+
+	constructor(other: VisualAsset2D) : super(other) {
+		this.width = other.width
+		this.height = other.height
+		this.orientationMode = other.orientationMode
+		this.backside = other.backside
 	}
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions,width=\"$width\",height=\"$height\",orientationMode=\"$orientationMode\",backside=\"$backside\")"
 	}
+
+
+	internal constructor(root: ARML, base: LowLevelVisualAsset2D) : super(root, base) {
+		this.width = base.width
+		this.height = base.height
+		this.backside = base.backside
+
+		if (base.orientationMode != null) {
+			try {
+				this.orientationMode = OrientationMode.valueOf(base.orientationMode!!.uppercase())
+			} catch (e: IllegalArgumentException) {
+				val possibleValues = OrientationMode.entries.map { it.toString() }
+				throw Exception("Expected one of $possibleValues for \"orientationMode\" element in ${this::class.simpleName}, got \"${base.orientationMode}\"")
+			}
+		}
+	}
 }
 
 
-
-
-//REQ: http://www.opengis.net/spec/arml/2.0/req/model/VisualAsset2D/interface
 internal abstract class LowLevelVisualAsset2D : LowLevelVisualAsset() {
 
 	@field:Element(name = "width", required = false)

@@ -5,28 +5,35 @@ import org.simpleframework.xml.Element
 import org.simpleframework.xml.Namespace
 import org.simpleframework.xml.Root
 
-class Tracker internal constructor(
-	private val root: ARML,
-	private val base: LowLevelTracker
-) : ARElement(root, base) {
+class Tracker : ARElement {
+	override val arElementType = ARElementType.TRACKER
 
-	internal constructor(root: ARML, other: Tracker) : this(root, other.base)
+	var uri: String
+	var src: String? = null
 
-	val uri: String = base.uri.href
-	val src: String? = base.src?.href
+	constructor(uri: String) : super() {
+		this.uri = uri
+	}
+
+	constructor(other: Tracker) : super(other) {
+		this.uri = other.uri
+		this.src = other.src
+	}
 
 	override val elementsById: HashMap<String, ARElement> = HashMap()
+
+	override fun validate(): Pair<Boolean, String> = SUCCESS
 
 	override fun toString(): String {
 		return "Tracker(id=\"$id\",uri=\"$uri\",src=\"$src\")"
 	}
 
-	override fun validate(): Pair<Boolean, String> {
-		return Pair(true, "Success")
+
+	internal constructor(root: ARML, base: LowLevelTracker) : super(base) {
+		this.uri = base.uri.href
+		this.src = base.src?.href
 	}
 }
-
-
 
 
 @Root(name = "Tracker", strict = true)

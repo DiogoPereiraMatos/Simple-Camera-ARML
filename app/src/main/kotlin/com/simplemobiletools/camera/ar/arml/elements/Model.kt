@@ -6,46 +6,66 @@ import org.simpleframework.xml.Element
 import org.simpleframework.xml.Namespace
 import org.simpleframework.xml.Root
 
-class Model internal constructor(
-	private val root: ARML,
-	private val base: LowLevelModel
-) : VisualAsset(root, base) {
+enum class ModelType {
+	NORMAL,
+	INFRASTRUCTURE;
 
-	internal constructor(root: ARML, other: Model) : this(root, other.base)
+	override fun toString(): String {
+		return this.name.lowercase()
+	}
+}
 
-	val href: String = base.href.href
-	val type: String? = base.type
-	val scale: Scale? = base.scale?.let { Scale(root, it) }
+class Model : VisualAsset, RelativeToAble {
+	override val arElementType = ARElementType.MODEL
 
-	val scaleVector: Float3 = Float3(
-		scale?.x?.toFloat() ?: 1f,
-		scale?.y?.toFloat() ?: 1f,
-		scale?.z?.toFloat() ?: 1f,
-	)
+	var href: String
+	var type: ModelType = ModelType.NORMAL
+	var scale: Scale? = null
+
+	val scaleVector: Float3
+		get() = Float3(
+			scale?.x?.toFloat() ?: 1f,
+			scale?.y?.toFloat() ?: 1f,
+			scale?.z?.toFloat() ?: 1f,
+		)
+
+	constructor(href: String) : super() {
+		this.href = href
+	}
+
+	constructor(other: Model) : super(other) {
+		this.href = other.href
+		this.type = other.type
+		this.scale = other.scale
+	}
 
 	override val elementsById: HashMap<String, ARElement> = HashMap()
 
 	override fun validate(): Pair<Boolean, String> {
-		val result = super.validate(); if (!result.first) return result
-		if (type != null) {
-			if (type.lowercase() !in arrayOf("normal", "infrastructure")) return Pair(
-				false,
-				"Expected \"normal\" or \"infrastructure\" for \"type\" element in ${this::class.simpleName}, got \"$type\""
-			)
-		}
-		if (scale != null) {
-			val result1 = scale.validate()
-			if (!result1.first) return result1
-		}
-		return Pair(true, "Success")
+		super.validate().let { if (!it.first) return it }
+		scale?.let { scale -> scale.validate().let { if (!it.first) return it } }
+		return SUCCESS
 	}
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions,href=\"$href\",type=\"$type\",scale=$scale)"
 	}
+
+
+	internal constructor(root: ARML, base: LowLevelModel) : super(root, base) {
+		this.href = base.href.href
+		this.scale = base.scale?.let { Scale(root, it) }
+
+		if (base.type != null) {
+			try {
+				this.type = ModelType.valueOf(base.type!!.uppercase())
+			} catch (e: IllegalArgumentException) {
+				val possibleValues = ModelType.entries.map { it.toString() }
+				throw Exception("Expected one of $possibleValues for \"type\" element in ${this::class.simpleName}, got \"${base.type}\"")
+			}
+		}
+	}
 }
-
-
 
 
 @Root(name = "Model", strict = true)

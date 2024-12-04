@@ -5,28 +5,35 @@ import org.simpleframework.xml.Element
 import org.simpleframework.xml.Namespace
 import org.simpleframework.xml.Root
 
-class Image internal constructor(
-	private val root: ARML,
-	private val base: LowLevelImage
-) : VisualAsset2D(root, base) {
+class Image : VisualAsset2D {
+	override val arElementType = ARElementType.IMAGE
 
-	internal constructor(root: ARML, other: Image) : this(root, other.base)
+	var href: String
 
-	val href: String = base.href.href
+	constructor(href: String) : super() {
+		this.href = href
+	}
+
+	constructor(other: Image) : super(other) {
+		this.href = other.href
+	}
 
 	override val elementsById: HashMap<String, ARElement> = HashMap()
 
 	override fun validate(): Pair<Boolean, String> {
-		val result = super.validate(); if (!result.first) return result
-		return Pair(true, "Success")
+		super.validate().let { if (!it.first) return it }
+		return SUCCESS
 	}
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions,width=\"$width\",height=\"$height\",orientationMode=\"$orientationMode\",backside=\"$backside\",href=\"$href\")"
 	}
+
+
+	internal constructor(root: ARML, base: LowLevelImage) : super(root, base) {
+		this.href = base.href.href
+	}
 }
-
-
 
 
 @Root(name = "Image", strict = true)

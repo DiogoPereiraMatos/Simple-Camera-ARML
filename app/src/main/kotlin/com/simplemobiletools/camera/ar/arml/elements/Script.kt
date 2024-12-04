@@ -5,27 +5,33 @@ import org.simpleframework.xml.Namespace
 import org.simpleframework.xml.Root
 import org.simpleframework.xml.Text
 
-class Script internal constructor(
-	private val root: ARML,
-	private val base: LowLevelScript
-) {
+class Script {
+	var type: String? = null
+	var href: String? = null
+	var content: String
 
-	internal constructor(root: ARML, other: Script) : this(root, other.base)
+	constructor(content: String) : super() {
+		this.content = content
+	}
 
-	val type: String? = base.type
-	val href: String? = base.href
-	val content: String = base.content
+	constructor(other: Script) : this(other.content) {
+		this.type = other.type
+		this.href = other.href
+	}
+
+	fun validate(): Pair<Boolean, String> = SUCCESS
 
 	override fun toString(): String {
+		val content = this.content.filterNot { it == '\n' }.trimIndent().trim()
 		return "script(type=\"$type\",href=\"$href\",content=\"$content\")"
 	}
 
-	fun validate(): Pair<Boolean, String> {
-		return Pair(true, "Success")
+
+	internal constructor(root: ARML, base: LowLevelScript) : this(base.content) {
+		this.type = base.type
+		this.href = base.href
 	}
 }
-
-
 
 
 @Root(name = "script", strict = true)
@@ -39,6 +45,5 @@ internal class LowLevelScript {
 	var href: String? = null
 
 	@field:Text
-	var content: String = ""
-		get() = field.trimIndent().filterNot { it == '\n' }
+	lateinit var content: String
 }

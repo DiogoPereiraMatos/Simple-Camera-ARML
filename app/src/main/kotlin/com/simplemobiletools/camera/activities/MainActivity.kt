@@ -973,7 +973,6 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
 
     private fun launchARActivity() {
 		Intent(applicationContext, SceneviewActivity::class.java).also {
-			it.putExtra(Intent.EXTRA_TEXT, assets.open("armlexamples/test.xml").readBytes().decodeToString())
 			startActivity(it)
 		}
     }

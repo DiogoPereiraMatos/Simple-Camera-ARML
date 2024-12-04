@@ -1,17 +1,11 @@
 package com.simplemobiletools.camera.ar.qr
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.Point
-import android.graphics.Rect
+import android.graphics.*
 import android.os.Handler
-import android.util.Log
 import android.view.ViewGroup
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.simplemobiletools.commons.extensions.getProperPrimaryColor
-import java.util.ArrayList
 import kotlin.math.ceil
 import kotlin.math.floor
 

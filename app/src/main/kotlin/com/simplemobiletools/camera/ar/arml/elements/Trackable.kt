@@ -1,60 +1,72 @@
 package com.simplemobiletools.camera.ar.arml.elements
 
-import org.simpleframework.xml.Attribute
-import org.simpleframework.xml.Element
-import org.simpleframework.xml.ElementList
-import org.simpleframework.xml.Namespace
-import org.simpleframework.xml.Root
+import org.simpleframework.xml.*
 
-class Trackable internal constructor(
-	private val root: ARML,
-	private val base: LowLevelTrackable
-) : ARAnchor(root, base) {
+class Trackable : ARAnchor {
+	override val arElementType: ARElementType = ARElementType.TRACKABLE
 
-	internal constructor(root: ARML, other: Trackable) : this(root, other.base)
+	var size: Double? = null
+	val config: ArrayList<TrackableConfig> = ArrayList()
 
-	val config: List<TrackableConfig> = base.config.map { TrackableConfig(root, it) }
-	val size: Double? = base.size
+	val sortedConfig: ArrayList<TrackableConfig>
+		get() = ArrayList(config.sortedBy { it.order })
+
+	constructor() : super()
+
+	constructor(other: Trackable) : super(other) {
+		this.size = other.size
+		this.config.replaceAllWith(other.config)
+	}
+
+	override fun validate(): Pair<Boolean, String> {
+		super.validate().let { if (!it.first) return it }
+		config.forEach { config -> config.validate().let { if (!it.first) return it } }
+		return SUCCESS
+	}
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,assets=$assets,config=$config,size=$size)"
 	}
 
-	override fun validate(): Pair<Boolean, String> {
-		val result = super.validate(); if (!result.first) return result
-		config.forEach { val result1 = it.validate(); if (!result1.first) return result1 }
-		return Pair(true, "Success")
+
+	internal constructor(root: ARML, base: LowLevelTrackable) : super(root, base) {
+		this.size = base.size
+		this.config.replaceAllWith(base.config.map { TrackableConfig(root, it) })
 	}
 }
 
-class TrackableConfig internal constructor(
-	root: ARML,
-	private val base: LowLevelTrackableConfig
-) {
+class TrackableConfig {
+	var tracker: String
+	var src: String
+	var order: Int = Int.MAX_VALUE
 
-	internal constructor(root: ARML, other: TrackableConfig) : this(root, other.base)
+	constructor(tracker: String, src: String) : super() {
+		this.tracker = tracker
+		this.src = src
+	}
 
-	val tracker: String = base.tracker.href
-	val src: String = base.src
-	val order: Int? = base.order
+	constructor(other: TrackableConfig) : this(other.tracker, other.src) {
+		this.order = other.order
+	}
+
+	fun validate(): Pair<Boolean, String> = SUCCESS
 
 	override fun toString(): String {
 		return "Config(tracker=\"$tracker\",src=\"$src\",order=$order)"
 	}
 
-	fun validate(): Pair<Boolean, String> {
-		return Pair(true, "Success")
+
+	internal constructor(root: ARML, base: LowLevelTrackableConfig) : this(base.tracker.href, base.src) {
+		this.order = base.order ?: 0
 	}
 }
-
-
 
 
 @Root(name = "Trackable", strict = true)
 internal class LowLevelTrackable : LowLevelARAnchor() {
 
 	@field:ElementList(name = "config", required = true, inline = true)
-	var config: List<LowLevelTrackableConfig> = ArrayList()
+	lateinit var config: List<LowLevelTrackableConfig>
 
 	@field:Element(name = "size", required = false)
 	var size: Double? = null

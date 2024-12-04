@@ -19,6 +19,7 @@ class ARMLParser {
 		"""
 	}
 
+	//private val serializer: Serializer = Persister(AnnotationStrategy(CycleStrategy()))
 	private val serializer: Serializer = Persister(AnnotationStrategy(TreeStrategy()))
 
 	@Throws(Exception::class)

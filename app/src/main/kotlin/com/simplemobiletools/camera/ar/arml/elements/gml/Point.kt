@@ -1,40 +1,49 @@
 package com.simplemobiletools.camera.ar.arml.elements.gml
 
 import com.simplemobiletools.camera.ar.arml.elements.ARML
+import com.simplemobiletools.camera.ar.arml.elements.SUCCESS
+import com.simplemobiletools.camera.ar.arml.elements.replaceAllWith
 import org.simpleframework.xml.Attribute
 import org.simpleframework.xml.Element
 import org.simpleframework.xml.Namespace
 import org.simpleframework.xml.Root
 
-class Point internal constructor(
-	private val root: ARML,
-	private val base: LowLevelPoint
-) : GMLGeometries(root, base) {
+class Point : GMLGeometry {
+	val pos: ArrayList<Float> = ArrayList()
+	var srsDimension: Int
 
-	internal constructor(root: ARML, other: Point) : this(root, other.base)
+	constructor(id: String, srsDimension: Int) : super(id) {
+		this.srsDimension = srsDimension
+	}
 
-	val pos : List<Float> = base.pos.split(' ').map { it.toFloat() }
-	var srsDimension: Int = base.srsDimension
+	constructor(other: Point) : super(other) {
+		this.pos.replaceAllWith(other.pos)
+		this.srsDimension = other.srsDimension
+	}
+
+	override fun validate(): Pair<Boolean, String> {
+		if (pos.size != srsDimension)
+			return Pair(
+				false,
+				"Dimension of \"pos\" element in ${this::class.simpleName} is different from value of \"srsDimension\" attribute, got \"pos\"=$pos, \"srsDimension=$srsDimension\""
+			)
+		return SUCCESS
+	}
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(pos=\"$pos\")"
 	}
 
-	override fun validate(): Pair<Boolean, String> {
-		if (pos.size != srsDimension) return Pair(
-			false,
-			"Dimension of \"pos\" element in ${this::class.simpleName} is different from value of \"srsDimension\" attribute, got \"pos\"=$pos, \"srsDimension=$srsDimension\""
-		)
-		return Pair(true, "Success")
+
+	internal constructor(root: ARML, base: LowLevelPoint) : this(base.id, base.srsDimension) {
+		this.pos.replaceAllWith(base.pos.split(' ').map { it.toFloat() })
 	}
 }
 
 
-
-
 @Namespace(reference = "http://www.opengis.net/gml/3.2", prefix = "gml")
 @Root(name = "Point")
-internal class LowLevelPoint : LowLevelGMLGeometries() {
+internal class LowLevelPoint : LowLevelGMLGeometry() {
 
 	@Namespace(reference = "http://www.opengis.net/gml/3.2", prefix = "gml")
 	@field:Element(name = "pos", required = true)

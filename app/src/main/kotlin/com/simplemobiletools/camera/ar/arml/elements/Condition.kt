@@ -1,12 +1,10 @@
 package com.simplemobiletools.camera.ar.arml.elements
 
-abstract class Condition internal constructor(
-	private val root: ARML,
-	private val base: LowLevelCondition
-) : ARElement(root, base)
+abstract class Condition : ARElement {
+	constructor() : super()
+	constructor(other: Condition) : super(other)
+	internal constructor(base: LowLevelCondition) : super(base)
+}
 
 
-
-
-//REQ: http://www.opengis.net/spec/arml/2.0/req/model/Condition/interface
 internal abstract class LowLevelCondition : LowLevelARElement()

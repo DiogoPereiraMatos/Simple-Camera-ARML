@@ -5,30 +5,29 @@ import org.simpleframework.xml.Element
 import org.simpleframework.xml.Namespace
 import org.simpleframework.xml.Root
 
-class LineString internal constructor(
-	private val root: ARML,
-	private val base: LowLevelLineString
-) : GMLGeometries(root, base) {
+class LineString : GMLGeometry {
+	var posList: String
 
-	internal constructor(root: ARML, other: LineString) : this(root, other.base)
+	constructor(id: String, posList: String) : super(id) {
+		this.posList = posList
+	}
 
-	val posList : String = base.posList
+	constructor(other: LineString) : super(other) {
+		this.posList = other.posList
+	}
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(posList=$posList)"
 	}
 
-	override fun validate(): Pair<Boolean, String> {
-		return Pair(true, "Success")
-	}
+
+	internal constructor(root: ARML, base: LowLevelLineString) : this(base.id, base.posList)
 }
-
-
 
 
 @Namespace(reference = "http://www.opengis.net/gml/3.2", prefix = "gml")
 @Root(name = "LineString")
-internal class LowLevelLineString : LowLevelGMLGeometries() {
+internal class LowLevelLineString : LowLevelGMLGeometry() {
 
 	@Namespace(reference = "http://www.opengis.net/gml/3.2", prefix = "gml")
 	@field:Element(name = "posList", required = true)

@@ -3,27 +3,30 @@ package com.simplemobiletools.camera.ar.arml.elements
 import org.simpleframework.xml.Element
 import org.simpleframework.xml.Root
 
-class Orientation internal constructor(
-	private val root: ARML,
-	private val base: LowLevelOrientation
-) {
+class Orientation {
+	var roll: Double? = null
+	var tilt: Double? = null
+	var heading: Double? = null
 
-	internal constructor(root: ARML, other: Orientation) : this(root, other.base)
+	constructor() : super()
 
-	val roll: Double? = base.roll
-	val tilt: Double? = base.tilt
-	val heading: Double? = base.heading
-
-	fun validate(): Pair<Boolean, String> {
-		return Pair(true, "Success")
+	constructor(other: Orientation) : this() {
+		this.roll = other.roll
 	}
+
+	fun validate(): Pair<Boolean, String> = SUCCESS
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(roll=$roll,tilt=$tilt,heading=$heading)"
 	}
+
+
+	internal constructor(root: ARML, base: LowLevelOrientation) : this() {
+		this.roll = base.roll
+		this.tilt = base.tilt
+		this.heading = base.heading
+	}
 }
-
-
 
 
 @Root(name = "Orientation", strict = true)

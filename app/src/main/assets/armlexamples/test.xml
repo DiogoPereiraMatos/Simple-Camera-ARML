@@ -7,7 +7,7 @@
 
 				<Trackable id="centreAnchor">
 					<config>
-						<tracker xlink:href="#genericVPlaneTracker" />
+						<tracker xlink:href="#genericHUPlaneTracker" />
 						<src>look for a plane, idk</src>
 					</config>
 					<assets>
@@ -18,26 +18,9 @@
 								<y>0.25</y>
 								<z>0.25</z>
 							</Scale>
-							<DistanceCondition>
-								<max>0.05</max>
-							</DistanceCondition>
-						</Model>
-
-						<Model id="mercuryModel">
-							<href xlink:href="models/Mercury/Mercury.gltf" />
-							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
-							</Scale>
-							<DistanceCondition>
-								<min>0.05</min>
-							</DistanceCondition>
 						</Model>
 					</assets>
 				</Trackable>
-
-				<!--
 
 				<RelativeTo id="mercuryAnchor">
 					<ref xlink:href="centreAnchor" />
@@ -54,9 +37,25 @@
 								<y>0.25</y>
 								<z>0.25</z>
 							</Scale>
+							<SelectedCondition>
+								<selected>false</selected>
+							</SelectedCondition>
+						</Model>
+						<Model id="venusModel">
+							<href xlink:href="models/Venus/Venus.gltf" />
+							<Scale>
+								<x>0.25</x>
+								<y>0.25</y>
+								<z>0.25</z>
+							</Scale>
+							<SelectedCondition>
+								<selected>true</selected>
+							</SelectedCondition>
 						</Model>
 					</assets>
 				</RelativeTo>
+
+				<!--
 
 				<RelativeTo id="venusAnchor">
 					<ref xlink:href="centreAnchor" />

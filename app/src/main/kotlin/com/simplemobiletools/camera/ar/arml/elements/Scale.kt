@@ -3,39 +3,50 @@ package com.simplemobiletools.camera.ar.arml.elements
 import org.simpleframework.xml.Element
 import org.simpleframework.xml.Root
 
-class Scale internal constructor(
-	private val root: ARML,
-	private val base: LowLevelScale
-) {
+class Scale {
+	var x: Double = 1.0
+	var y: Double = 1.0
+	var z: Double = 1.0
 
-	internal constructor(root: ARML, other: Scale) : this(root, other.base)
+	constructor() : super()
 
-	val x: Double? = base.x
-	val y: Double? = base.y
-	val z: Double? = base.z
+	constructor(other: Scale) : this() {
+		this.x = other.x
+		this.y = other.y
+		this.z = other.z
+	}
 
 	fun validate(): Pair<Boolean, String> {
-		if (x != null) if (x <= 0) return Pair(
-			false,
-			"\"x\" element in ${this::class.simpleName} must be > 0, got $x"
-		)
-		if (y != null) if (y <= 0) return Pair(
-			false,
-			"\"y\" element in ${this::class.simpleName} must be > 0, got $y"
-		)
-		if (z != null) if (z <= 0) return Pair(
-			false,
-			"\"z\" element in ${this::class.simpleName} must be > 0, got $z"
-		)
-		return Pair(true, "Success")
+		if (x <= 0)
+			return Pair(
+				false,
+				"\"x\" element in ${this::class.simpleName} must be > 0, got $x"
+			)
+		if (y <= 0)
+			return Pair(
+				false,
+				"\"y\" element in ${this::class.simpleName} must be > 0, got $y"
+			)
+		if (z <= 0)
+			return Pair(
+				false,
+				"\"z\" element in ${this::class.simpleName} must be > 0, got $z"
+			)
+
+		return SUCCESS
 	}
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(x=$x,y=$y,z=$z)"
 	}
+
+
+	internal constructor(root: ARML, base: LowLevelScale) : this() {
+		this.x = base.x ?: 1.0
+		this.y = base.y ?: 1.0
+		this.z = base.z ?: 1.0
+	}
 }
-
-
 
 
 @Root(name = "Scale", strict = true)

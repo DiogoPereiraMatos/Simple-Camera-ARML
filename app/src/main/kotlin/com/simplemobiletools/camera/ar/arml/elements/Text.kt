@@ -3,37 +3,48 @@ package com.simplemobiletools.camera.ar.arml.elements
 import org.simpleframework.xml.Element
 import org.simpleframework.xml.Root
 
-class Text internal constructor(
-	private val root: ARML,
-	private val base: LowLevelText
-) : VisualAsset2D(root, base) {
+class Text : VisualAsset2D {
+	override val arElementType = ARElementType.TEXT
 
-	internal constructor(root: ARML, other: Text) : this(root, other.base)
+	var src: String
+	var style: String? = null
+	var css: String? = null
 
-	val src: String = base.src
-	val style: String? = base.style
-	val css: String? = base.css
+	constructor(src: String) : super() {
+		this.src = src
+	}
+
+	constructor(other: Text) : super(other) {
+		this.src = other.src
+		this.style = other.style
+		this.css = other.css
+	}
 
 	override val elementsById: HashMap<String, ARElement> = HashMap()
 
 	override fun validate(): Pair<Boolean, String> {
-		val result = super.validate(); if (!result.first) return result
-		return Pair(true, "Success")
+		super.validate().let { if (!it.first) return it }
+		return SUCCESS
 	}
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions,width=\"$width\",height=\"$height\",orientationMode=\"$orientationMode\",backside=\"$backside\",src=\"$src\",style=\"$style\",class=\"$css\")"
 	}
+
+
+	internal constructor(root: ARML, base: LowLevelText) : super(root, base) {
+		this.src = base.src
+		this.style = base.style
+		this.css = base.css
+	}
 }
-
-
 
 
 @Root(name = "Text", strict = true)
 internal class LowLevelText : LowLevelVisualAsset2D() {
 
 	@field:Element(name = "src", required = true)
-	var src: String = ""
+	lateinit var src: String
 
 	@field:Element(name = "style", required = false)
 	var style: String? = null

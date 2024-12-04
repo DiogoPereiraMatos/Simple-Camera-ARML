@@ -5,82 +5,111 @@ import org.simpleframework.xml.ElementList
 import org.simpleframework.xml.ElementListUnion
 import org.simpleframework.xml.Root
 
+internal fun<E> ArrayList<E>.replaceAllWith(other: List<E>) {
+	this.clear()
+	this.addAll(other)
+}
 
-class ARML() {
+enum class ARElementType(val className: String) {
+	FEATURE           (Feature::class.simpleName!!),
+	TRACKABLE         (Trackable::class.simpleName!!),
+	RELATIVETO        (RelativeTo::class.simpleName!!),
+	SCREENANCHOR      (ScreenAnchor::class.simpleName!!),
+	GEOMETRY          (Geometry::class.simpleName!!),
+	DISTANCECONDITION (DistanceCondition::class.simpleName!!),
+	FILL              (Fill::class.simpleName!!),
+	IMAGE             (Image::class.simpleName!!),
+	LABEL             (Label::class.simpleName!!),
+	MODEL             (Model::class.simpleName!!),
+	SELECTEDCONDITION (SelectedCondition::class.simpleName!!),
+	TEXT              (Text::class.simpleName!!),
+	TRACKER           (Tracker::class.simpleName!!),
+}
 
-	private var base: LowLevelARML = LowLevelARML()
-	internal constructor(base: LowLevelARML) : this() {
-		this.base = base
+val SUCCESS = Pair(true, "Success")
+
+class ARML {
+	val elements: ArrayList<ARElement> = ArrayList()
+	val scripts: ArrayList<Script> = ArrayList()
+	val styles: ArrayList<Style> = ArrayList()
+
+	constructor() : super()
+
+	constructor(other: ARML) : this() {
+		this.elements.replaceAllWith(other.elements)
+		this.scripts.replaceAllWith(other.scripts)
+		this.styles.replaceAllWith(other.styles)
 	}
-
-	internal constructor(other: ARML) : this(other.base)
-
-	val elements: List<ARElement>
-		get() {
-			val result = ArrayList<ARElement>()
-			val lowLevelList = base.elements.elements
-			lowLevelList.forEach {
-				when(it) {
-					is LowLevelFeature -> result.add(Feature(this, it))
-					is LowLevelTracker -> result.add(Tracker(this, it))
-					is LowLevelScreenAnchor -> result.add(ScreenAnchor(this, it))
-					is LowLevelGeometry -> result.add(Geometry(this, it))
-					is LowLevelRelativeTo -> result.add(RelativeTo(this, it))
-					is LowLevelTrackable -> result.add(Trackable(this, it))
-					is LowLevelSelectedCondition -> result.add(SelectedCondition(this, it))
-					is LowLevelDistanceCondition -> result.add(DistanceCondition(this, it))
-					is LowLevelModel -> result.add(Model(this, it))
-					is LowLevelFill -> result.add(Fill(this, it))
-					is LowLevelImage -> result.add(Image(this, it))
-					is LowLevelLabel -> result.add(Label(this, it))
-					is LowLevelText -> result.add(Text(this, it))
-					else -> throw Exception("Unexpected ARML Element Type: $it")
-				}
-			}
-			return result
-		}
-
-	val scripts: List<Script> = base.scripts.map { Script(this, it) }
-	val styles: List<Style> = base.styles.map { Style(this, it) }
 
 	val elementsById: HashMap<String, ARElement>
 		get() {
-			val result: HashMap<String, ARElement> = HashMap()
+			val result = HashMap<String, ARElement>()
 			elements.forEach {
-				if (it.id != null)
-					result[it.id] = it
+				result[it.id] = it
 				result.putAll(it.elementsById)
 			}
 			return result
 		}
 
 	fun validate(): Pair<Boolean, String> {
-		elements.forEach { val result = it.validate(); if (!result.first) return result }
-		scripts.forEach { val result1 = it.validate(); if (!result1.first) return result1 }
-		styles.forEach { val result2 = it.validate(); if (!result2.first) return result2 }
-		return Pair(true, "Success")
+		elements.forEach { element -> element.validate().let { if (!it.first) return it } }
+		scripts.forEach { script -> script.validate().let { if (!it.first) return it } }
+		styles.forEach { style -> style.validate().let { if (!it.first) return it } }
+		return SUCCESS
 	}
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(ARElements=$elements,scripts=$scripts,styles=$styles)"
 	}
+
+	override fun equals(other: Any?): Boolean {
+		// This is scuffed
+		return toString() == other.toString()
+	}
+
+	override fun hashCode(): Int {
+		// This is also scuffed
+		return toString().hashCode()
+	}
+
+
+	internal constructor(base: LowLevelARML) : this() {
+		this.elements.clear()
+		base.elements.elements?.forEach {
+			val element: ARElement = when (it) {
+				is LowLevelFeature -> Feature(this, it)
+				is LowLevelTracker -> Tracker(this, it)
+				is LowLevelScreenAnchor -> ScreenAnchor(this, it)
+				is LowLevelGeometry -> Geometry(this, it)
+				is LowLevelRelativeTo -> RelativeTo(this, it)
+				is LowLevelTrackable -> Trackable(this, it)
+				is LowLevelSelectedCondition -> SelectedCondition(this, it)
+				is LowLevelDistanceCondition -> DistanceCondition(this, it)
+				is LowLevelModel -> Model(this, it)
+				is LowLevelFill -> Fill(this, it)
+				is LowLevelImage -> Image(this, it)
+				is LowLevelLabel -> Label(this, it)
+				is LowLevelText -> Text(this, it)
+				else -> throw Exception("Unexpected ARML Element Type: $it")
+			}
+			this.elements.add(element)
+		}
+
+		base.scripts?.let { this.scripts.replaceAllWith(it.map { Script(this, it) }) }
+		base.styles?.let { this.styles.replaceAllWith(it.map { Style(this, it) }) }
+	}
 }
 
 
-
-
-//REQ: http://www.opengis.net/spec/arml/2.0/req/model/general/root_element
 @Root(name = "arml", strict = true)
 internal class LowLevelARML {
 
-	//REQ: http://www.opengis.net/spec/arml/2.0/req/model/ARElement/container
 	@field:Element(name = "ARElements", required = true)
 	lateinit var elements: ARElements
 
 	@Root(name = "ARElements")
 	internal class ARElements {
 
-		//REQ: http://www.opengis.net/spec/arml/2.0/req/model/ARElement/container
 		@field:ElementListUnion(
 			ElementList(name = "Feature", type = LowLevelFeature::class, inline = true, required = false),
 			ElementList(name = "Tracker", type = LowLevelTracker::class, inline = true, required = false),
@@ -104,12 +133,12 @@ internal class LowLevelARML {
 			ElementList(name = "Label", type = LowLevelLabel::class, inline = true, required = false),
 			ElementList(name = "Text", type = LowLevelText::class, inline = true, required = false),
 		)
-		var elements: List<LowLevelARElement> = ArrayList()
+		var elements: List<LowLevelARElement>? = null
 	}
 
 	@field:ElementList(name = "script", required = false, inline = true)
-	var scripts: List<LowLevelScript> = ArrayList()
+	var scripts: List<LowLevelScript>? = null
 
 	@field:ElementList(name = "style", required = false, inline = true)
-	var styles: List<LowLevelStyle> = ArrayList()
+	var styles: List<LowLevelStyle>? = null
 }

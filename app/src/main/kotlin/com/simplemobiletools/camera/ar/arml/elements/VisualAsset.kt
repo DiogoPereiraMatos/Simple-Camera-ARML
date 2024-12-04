@@ -5,63 +5,68 @@ import org.simpleframework.xml.Element
 import org.simpleframework.xml.ElementList
 import org.simpleframework.xml.ElementListUnion
 
-abstract class VisualAsset internal constructor(
-	private val root: ARML,
-	private val base: LowLevelVisualAsset
-) : ARElement(root, base) {
+abstract class VisualAsset : ARElement {
+	var enabled: Boolean = true
+	var zOrder: Int? = null
+	val conditions: ArrayList<Condition> = ArrayList()
+	var orientation: Orientation? = null
+	var scalingMode: ScalingMode? = null
 
-	internal constructor(root: ARML, other: VisualAsset) : this(root, other.base)
+	val rotationVector: Float3
+		get() = Float3(
+			orientation?.roll?.toFloat() ?: 0f,
+			orientation?.heading?.toFloat() ?: 0f, //pan
+			orientation?.tilt?.toFloat() ?: 0f,
+		)
 
-	val enabled: Boolean? = base.enabled
-	val zOrder: Int? = base.zOrder
-	val orientation: Orientation? = base.orientation?.let { Orientation(root, it) }
-	val scalingMode: ScalingMode? = base.scalingMode?.let { ScalingMode(root, it) }
-	val conditions : List<Condition>?
-		get() {
-			if (base.conditions == null) return null
+	constructor() : super()
 
-			val result: ArrayList<Condition> = ArrayList()
-			val lowLevelList = base.conditions!!
-			lowLevelList.forEach {
-				when(it) {
-					is LowLevelSelectedCondition -> result.add(SelectedCondition(root, it))
-					is LowLevelDistanceCondition -> result.add(DistanceCondition(root, it))
-					else -> throw Exception("Unexpected VisualAsset Condition Type: $it")
-				}
-			}
-			return result
-		}
-
-	val rotationVector: Float3 = Float3(
-		orientation?.roll?.toFloat() ?: 0f,
-		orientation?.heading?.toFloat() ?: 0f, //pan
-		orientation?.tilt?.toFloat() ?: 0f,
-	)
+	constructor(other: VisualAsset) : super(other) {
+		this.enabled = other.enabled
+		this.zOrder = other.zOrder
+		this.orientation = other.orientation
+		this.scalingMode = other.scalingMode
+		this.conditions.replaceAllWith(other.conditions)
+	}
 
 	override fun validate(): Pair<Boolean, String> {
-		if (orientation != null) {
-			val result = orientation.validate(); if (!result.first) return result
-		}
-		if (scalingMode != null) {
-			val result1 = scalingMode.validate(); if (!result1.first) return result1
-		}
-		conditions?.forEach { val result2 = it.validate(); if (!result2.first) return result2 }
-		return Pair(true, "Success")
+		orientation?.let { orientation -> orientation.validate().let { if (!it.first) return it } }
+		scalingMode?.let { scalingMode -> scalingMode.validate().let { if (!it.first) return it } }
+		conditions.forEach { condition -> condition.validate().let { if (!it.first) return it } }
+		return SUCCESS
 	}
 
 	override fun toString(): String {
 		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions)"
 	}
+
+
+	internal constructor(root: ARML, base: LowLevelVisualAsset) : super(base) {
+		this.enabled = base.enabled ?: true
+		this.zOrder = base.zOrder
+		this.orientation = base.orientation?.let { Orientation(root, it) }
+		this.scalingMode = base.scalingMode?.let { ScalingMode(root, it) }
+
+		val result: ArrayList<Condition> = ArrayList()
+		if (base.conditions != null) {
+			val lowLevelList = base.conditions!!
+			lowLevelList.forEach {
+				when (it) {
+					is LowLevelSelectedCondition -> result.add(SelectedCondition(root, it))
+					is LowLevelDistanceCondition -> result.add(DistanceCondition(root, it))
+					else -> throw Exception("Unexpected VisualAsset Condition Type: $it")
+				}
+			}
+		}
+		this.conditions.replaceAllWith(result)
+	}
 }
 
 
-
-
-//REQ: http://www.opengis.net/spec/arml/2.0/req/model/VisualAsset/interface
 internal abstract class LowLevelVisualAsset : LowLevelARElement() {
 
 	@field:Element(name = "enabled", required = false)
-	var enabled: Boolean? = true
+	var enabled: Boolean? = null
 
 	@field:Element(name = "zOrder", required = false)
 	var zOrder: Int? = null

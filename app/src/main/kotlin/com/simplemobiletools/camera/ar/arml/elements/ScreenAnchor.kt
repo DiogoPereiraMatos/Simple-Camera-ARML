@@ -1,58 +1,62 @@
 package com.simplemobiletools.camera.ar.arml.elements
 
-import org.simpleframework.xml.Attribute
-import org.simpleframework.xml.Element
-import org.simpleframework.xml.ElementList
-import org.simpleframework.xml.Namespace
-import org.simpleframework.xml.Root
+import org.simpleframework.xml.*
 
-class ScreenAnchor internal constructor(
-	private val root: ARML,
-	private val base: LowLevelScreenAnchor
-) : Anchor(root, base) {
+class ScreenAnchor : Anchor {
+	override val arElementType: ARElementType = ARElementType.SCREENANCHOR
 
-	internal constructor(root: ARML, other: ScreenAnchor) : this(root, other.base)
+	var style: String? = null
+	var css: String? = null
+	val assets: ArrayList<Label> = ArrayList()
 
-	val style: String? = base.style
-	val css: String? = base.css
+	constructor() : super()
 
-	val assets: ArrayList<Any>
-		get() {
-			val result = ArrayList<Any>()
-			result.addAll(base.assets.assetsRefs)
-			base.assets.labels.forEach {
-				when(it) {
-					is LowLevelLabel -> result.add(Label(root, it))
-					else -> throw Exception("Unexpected ScreenAnchor Asset Type: $it")
-				}
-			}
-			return result
-		}
+	constructor(other: ScreenAnchor) : super(other) {
+		this.style = other.style
+		this.css = other.css
+		this.assets.replaceAllWith(other.assets)
+	}
 
 	override val elementsById: HashMap<String, ARElement>
 		get() {
 			val result: HashMap<String, ARElement> = HashMap()
 			assets.forEach {
-				when(it) {
-					is Label -> { it.id?.let { id -> result[id] = it}; result.putAll(it.elementsById) }
-					else -> throw Exception("Unexpected ScreenAnchor Asset Type: $it")
-				}
+				result[it.id] = it
+				result.putAll(it.elementsById)
 			}
 			return result
 		}
+
+	override fun validate(): Pair<Boolean, String> {
+		super.validate().let { if (!it.first) return it }
+		assets.forEach { asset -> asset.validate().let { if (!it.first) return it } }
+		return SUCCESS
+	}
 
 	override fun toString(): String {
 		return "ScreenAnchor(id=\"$id\",enabled=$enabled,style=\"$style\",class=\"$css\",assets=$assets)"
 	}
 
-	override fun validate(): Pair<Boolean, String> {
-		val result = super.validate(); if (!result.first) return result
-		assets.filterIsInstance(VisualAsset::class.java).forEach { val result1 = it.validate(); if (!result1.first) return result1 }
-		return Pair(true, "Success")
+
+	internal constructor(root: ARML, base: LowLevelScreenAnchor) : super(base) {
+		this.style = base.style
+		this.css = base.css
+
+		val result = ArrayList<Label>()
+		base.assets.labels?.forEach {
+			when (it) {
+				is LowLevelLabel -> result.add(Label(root, it))
+				else -> throw Exception("Unexpected ScreenAnchor Asset Type: $it")
+			}
+		}
+		base.assets.assetsRefs?.forEach {
+			val referred = root.elementsById[it.href] ?: throw Exception("Reference to unknown element: ${it.href}")
+			if (referred !is Label) throw Exception("${it.href} Expected reference to asset but got: $referred")
+			result.add(referred)
+		}
+		this.assets.replaceAllWith(result)
 	}
 }
-
-
 
 
 @Root(name = "ScreenAnchor", strict = true)
@@ -71,7 +75,7 @@ internal class LowLevelScreenAnchor : LowLevelAnchor() {
 	class ScreenAnchorAssets {
 
 		@field:ElementList(name = "assetRef", type = AssetRef::class, inline = true, required = false)
-		var assetsRefs: List<AssetRef> = ArrayList()
+		var assetsRefs: List<AssetRef>? = null
 
 		@Root(name = "assetRef", strict = true)
 		class AssetRef {
@@ -81,6 +85,6 @@ internal class LowLevelScreenAnchor : LowLevelAnchor() {
 		}
 
 		@field:ElementList(name = "Label", type = LowLevelLabel::class, inline = true, required = false)
-		var labels: List<LowLevelVisualAsset> = ArrayList()
+		var labels: List<LowLevelVisualAsset>? = null
 	}
 }

@@ -1,29 +1,24 @@
 package com.simplemobiletools.camera.ar.arml.elements
 
 import com.simplemobiletools.camera.ar.arml.elements.gml.*
-import com.simplemobiletools.camera.ar.arml.elements.gml.LowLevelGMLGeometries
-import com.simplemobiletools.camera.ar.arml.elements.gml.LowLevelPoint
-import org.simpleframework.xml.Attribute
-import org.simpleframework.xml.Element
-import org.simpleframework.xml.ElementUnion
-import org.simpleframework.xml.Namespace
-import org.simpleframework.xml.Root
+import org.simpleframework.xml.*
 
-class RelativeTo internal constructor(
-	private val root: ARML,
-	private val base: LowLevelRelativeTo
-) : ARAnchor(root, base) {
+interface RelativeToAble
 
-	internal constructor(root: ARML, other: RelativeTo) : this(root, other.base)
+class RelativeTo : ARAnchor {
+	override val arElementType: ARElementType = ARElementType.RELATIVETO
 
-	val ref: String = base.ref.href
-	val geometry: GMLGeometries = base.geometry.let {
-		when (it) {
-			is LowLevelPoint -> Point(root, it)
-			is LowLevelLineString -> LineString(root, it)
-			is LowLevelPolygon -> Polygon(root, it)
-			else -> throw Exception("Unexpected Geometry GMLGeometries Type: $it")
-		}
+	var ref: String
+	var geometry: GMLGeometry
+
+	constructor(ref: String, geometry: GMLGeometry) : super() {
+		this.ref = ref
+		this.geometry = geometry
+	}
+
+	constructor(other: RelativeTo) : super(other) {
+		this.ref = other.ref
+		this.geometry = other.geometry
 	}
 
 	override fun toString(): String {
@@ -31,19 +26,29 @@ class RelativeTo internal constructor(
 	}
 
 	override fun validate(): Pair<Boolean, String> {
-		val result = super.validate(); if (!result.first) return result
-		val result1 = geometry.validate(); if (!result1.first) return result1
-		return Pair(true, "Success")
+		super.validate().let { if (!it.first) return it }
+		geometry.validate().let { if (!it.first) return it }
+		return SUCCESS
+	}
+
+
+	internal constructor(root: ARML, base: LowLevelRelativeTo) : super(root, base) {
+		this.ref = base.ref.href
+		this.geometry = base.geometry.let {
+			when (it) {
+				is LowLevelPoint -> Point(root, it)
+				is LowLevelLineString -> LineString(root, it)
+				is LowLevelPolygon -> Polygon(root, it)
+				else -> throw Exception("Unexpected Geometry GMLGeometries Type: $it")
+			}
+		}
 	}
 }
-
-
 
 
 @Root(name = "RelativeTo", strict = true)
 internal class LowLevelRelativeTo : LowLevelARAnchor() {
 
-	//REQ: http://www.opengis.net/spec/arml/2.0/req/model/RelativeTo/ref
 	@field:Element(name = "ref", required = true)
 	lateinit var ref: REF
 
@@ -60,5 +65,5 @@ internal class LowLevelRelativeTo : LowLevelARAnchor() {
 		Element(name = "LineString", required = false, type = LowLevelLineString::class),
 		Element(name = "Polygon", required = false, type = LowLevelPolygon::class)
 	)
-	lateinit var geometry: LowLevelGMLGeometries
+	lateinit var geometry: LowLevelGMLGeometry
 }
