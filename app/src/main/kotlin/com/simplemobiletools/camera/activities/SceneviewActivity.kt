@@ -1,6 +1,7 @@
 package com.simplemobiletools.camera.activities
 
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.view.ViewGroup
@@ -28,9 +29,13 @@ import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.math.Position
+import io.github.sceneview.math.Rotation
+import io.github.sceneview.math.Scale
 import io.github.sceneview.model.setBlendOrder
 import io.github.sceneview.model.setGlobalBlendOrderEnabled
+import io.github.sceneview.node.ImageNode
 import io.github.sceneview.node.ModelNode
+import io.github.sceneview.node.Node
 import io.github.sceneview.utils.readBuffer
 import kotlinx.coroutines.launch
 import java.util.EnumMap
@@ -173,7 +178,8 @@ class SceneviewActivity : SimpleActivity() {
 
 	private val assetHandlers : EnumMap<ARElementType, (AnchorNode, VisualAsset) -> Unit> = EnumMap(
 		mapOf<ARElementType, (AnchorNode, VisualAsset) -> Unit>(
-			Pair(ARElementType.MODEL) { anchor, asset -> asset as Model; loadAndAddChildNode(anchor, asset) },
+			Pair(ARElementType.MODEL) { anchor, asset -> asset as Model; anchor.attachModel(asset) },
+			Pair(ARElementType.IMAGE) { anchor, asset -> asset as Image; anchor.attachImage(asset) }
 		)
 	)
 
@@ -340,11 +346,11 @@ class SceneviewActivity : SimpleActivity() {
                --------------------------------------------------------------   ...
                |                    |                        |
         +-------------+      +-------------+          +--------------+
-        | Model       |      | Model       |          | RelativeTo   |
-        | (ModelNode) |      | (ModelNode) |          | (AnchorNode) |
+        | Model       |      | Image       |          | RelativeTo   |
+        | (ModelNode) |      | (ImageNode) |          | (AnchorNode) |
         +-------------+      +-------------+          +--------------+
                                                              |
-                                      -----------------------------------------------
+                      ...  ----------------------------------------------------------
                                       |                    |                        |
                                 +-------------+      +-------------+       More RelativeTo...
                                 | Model       |      | Model       |
@@ -369,9 +375,9 @@ class SceneviewActivity : SimpleActivity() {
 		       |          |          |
 		       |          |          | (if placed / shown)
 		       v          |          v
-		+-------------+   |   +-------------+
-		|Model/V.Asset|   |   |  ModelNode  |
-		+-------------+   |   +-------------+
+		+-------------+   |   +-----------------------+
+		|   V.Asset   |   |   |  ModelNode/ImageNode  | (VisualAssetNode)
+		+-------------+   |   +-----------------------+
 	 */
 
 	private var armlPath : String = "armlexamples/empty.xml"
@@ -424,12 +430,12 @@ class SceneviewActivity : SimpleActivity() {
 	// Save VisualAssets that have conditions
 	private val conditionalVisualAssets : ArrayList<VisualAsset> = ArrayList()
 
-	// Save ModelNodes of VisualAssets
-	private val modelNodes : HashMap<VisualAsset, ModelNode> = HashMap()
-	private val VisualAsset.modelNode : ModelNode?
-		get() = this@SceneviewActivity.modelNodes[this]
-	private fun VisualAsset.setModelNode(modelNode : ModelNode) {
-		this@SceneviewActivity.modelNodes[this] = modelNode
+	// Save ModelNodes and ImageNodes of VisualAssets
+	private val visualAssetNodes : HashMap<VisualAsset, Node> = HashMap()
+	private val VisualAsset.visualAssetNode : Node?
+		get() = this@SceneviewActivity.visualAssetNodes[this]
+	private fun VisualAsset.setVisualAssetNode(visualAssetNode : Node) {
+		this@SceneviewActivity.visualAssetNodes[this] = visualAssetNode
 	}
 
 	// Save AnchorNodes of VisualAssets
@@ -444,8 +450,8 @@ class SceneviewActivity : SimpleActivity() {
 	// There is no function (that I know of) that hides and shows model on command, so this is how I'll do it...
 	private val VisualAsset.isHidden: Boolean
 		get() {
-			return if (anchorNode != null && modelNode != null)
-				!anchorNode!!.childNodes.contains(modelNode!!)
+			return if (anchorNode != null && visualAssetNode != null)
+				!anchorNode!!.childNodes.contains(visualAssetNode!!)
 			else true
 		}
 	private fun VisualAsset.show() {
@@ -453,8 +459,8 @@ class SceneviewActivity : SimpleActivity() {
 			//Log.w(TAG, "Tried to show asset that is not hidden: $this")
 			return
 		}
-		if (anchorNode != null && modelNode != null) {
-			anchorNode!!.addChildNode(modelNode!!)
+		if (anchorNode != null && visualAssetNode != null) {
+			anchorNode!!.addChildNode(visualAssetNode!!)
 			Log.d(TAG, "Showing $this")
 		}
 	}
@@ -463,8 +469,8 @@ class SceneviewActivity : SimpleActivity() {
 			//Log.w(TAG, "Tried to hide asset that is already hidden: $this")
 			return
 		}
-		if (anchorNode != null && modelNode != null) {
-			anchorNode!!.removeChildNode(modelNode!!)
+		if (anchorNode != null && visualAssetNode != null) {
+			anchorNode!!.removeChildNode(visualAssetNode!!)
 			Log.d(TAG, "Hiding $this")
 		}
 	}
@@ -526,7 +532,7 @@ class SceneviewActivity : SimpleActivity() {
 
 		// Clear auxiliary stuff
 		conditionalVisualAssets.clear()
-		modelNodes.clear()
+		visualAssetNodes.clear()
 		anchorNodes.clear()
 		isSelected.clear()
 
@@ -690,7 +696,9 @@ class SceneviewActivity : SimpleActivity() {
 		}
 	}
 
-	private fun loadAndAddChildNode(anchorNode: AnchorNode, model: Model) {
+	private fun AnchorNode.attachModel(model: Model) {
+		val anchorNode = this
+
 		lifecycleScope.launch {
 			isLoading = true
 
@@ -704,25 +712,27 @@ class SceneviewActivity : SimpleActivity() {
 
 			modelInstance?.let {
 				val modelNode = ModelNode(
-					modelInstance = it,
-					scaleToUnits = null,
-					centerOrigin = Position(0f,0f,0f)
+					modelInstance = it
 				)
 
 				modelNode.apply {
 					isEditable = true
-					this.scale = this.scale.times(model.scaleVector)
-					this.rotation = this.rotation.plus(model.rotationVector)
+
+					//FIXME: Axis are not working
+					transform(
+						rotation = Rotation(model.rotationVector + Rotation(180f, 180f, 180f)),
+						scale = Scale(model.scaleVector)
+					)
 
 					//setPriority(7)
 					setBlendOrder(model.zOrder ?: 0)
 					setGlobalBlendOrderEnabled(true)
 				}
 
-				addModelToScene(
+				addVisualAssetToScene(
 					anchorNode = anchorNode,
-					modelNode = modelNode,
-					model = model
+					visualAssetNode = modelNode,
+					visualAsset = model
 				)
 			}
 
@@ -730,23 +740,54 @@ class SceneviewActivity : SimpleActivity() {
 		}
 	}
 
-	private fun addModelToScene(anchorNode: AnchorNode, modelNode: ModelNode, model: Model) {
-		model.setAnchorNode(anchorNode)
-		model.setModelNode(modelNode)
+	private fun AnchorNode.attachImage(image: Image) {
+		val anchorNode = this
+
+		lifecycleScope.launch {
+			isLoading = true
+
+			val bitmap = BitmapFactory.decodeStream(assets.open(image.href))
+
+			val imageNode = ImageNode(
+				materialLoader = sceneView.materialLoader,
+				bitmap = bitmap
+				//normal = Direction(0f)  //TODO: Consider OrientationMode
+			)
+
+			imageNode.apply {
+				//FIXME: Once again, axis are not working
+				transform(
+					rotation = Rotation(image.rotationVector) + Rotation(180f, 180f, 180f)
+				)
+			}
+
+			addVisualAssetToScene(
+				anchorNode = anchorNode,
+				visualAssetNode = imageNode,
+				visualAsset = image
+			)
+
+			isLoading = false
+		}
+	}
+
+	private fun addVisualAssetToScene(anchorNode: AnchorNode, visualAssetNode: Node, visualAsset: VisualAsset) {
+		visualAsset.setAnchorNode(anchorNode)
+		visualAsset.setVisualAssetNode(visualAssetNode)
 
 		//FIXME: Not working
-		model.isSelected = false
-		modelNode.onDoubleTap = { model.toggleSelected(); true }
+		visualAsset.isSelected = false
+		visualAssetNode.onDoubleTap = { visualAsset.toggleSelected(); true }
 
 
-		if (model.conditions.isNotEmpty()) {
-			conditionalVisualAssets.add(model)
-			Log.d(TAG, "Added $model to conditionalVisualAssets")
+		if (visualAsset.conditions.isNotEmpty()) {
+			conditionalVisualAssets.add(visualAsset)
+			Log.d(TAG, "Added $visualAsset to conditionalVisualAssets")
 		}
 
-		if (model.evaluateConditions()) {
-			anchorNode.addChildNode(modelNode)  // equivalent to show()
-			Log.d(TAG, "Placed $model")
+		if (visualAsset.evaluateConditions()) {
+			anchorNode.addChildNode(visualAssetNode)  // equivalent to show()
+			Log.d(TAG, "Placed $visualAsset")
 		}
 	}
 
@@ -777,7 +818,11 @@ class SceneviewActivity : SimpleActivity() {
 		val newAnchorNode = AnchorNode(sceneView.engine, other.anchor).apply {
 			isEditable = true
 			other.addChildNode(this)
-			position = newPos
+
+			//FIXME: Axis still don't work
+			transform(
+				position = newPos
+			)
 		}
 		relativeTo.setAnchorNode(newAnchorNode)
 

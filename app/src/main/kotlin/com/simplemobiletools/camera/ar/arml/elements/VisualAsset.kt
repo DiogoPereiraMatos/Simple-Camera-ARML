@@ -14,9 +14,9 @@ abstract class VisualAsset : ARElement {
 
 	val rotationVector: Float3
 		get() = Float3(
-			orientation?.roll?.toFloat() ?: 0f,
-			orientation?.heading?.toFloat() ?: 0f, //pan
 			orientation?.tilt?.toFloat() ?: 0f,
+			orientation?.roll?.toFloat() ?: 0f,
+			orientation?.heading?.toFloat() ?: 0f,
 		)
 
 	constructor() : super()

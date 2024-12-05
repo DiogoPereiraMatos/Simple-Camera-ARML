@@ -1,0 +1,37 @@
+
+<arml xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<ARElements>
+
+		<Feature id="2dfeature">
+			<anchors>
+
+				<Trackable id="centreAnchor">
+					<config>
+						<tracker xlink:href="#genericVPlaneTracker" />
+						<src>look for a plane, idk</src>
+					</config>
+					<assets>
+						<Image>
+							<href xlink:href="images/tate.jpg" />
+						</Image>
+					</assets>
+				</Trackable>
+
+				<RelativeTo id="flagAnchor">
+					<ref xlink:href="centreAnchor" />
+					<gml:Point id="flagOffset" srsDimension="3"> <!-- TODO: Would probably be 2 in this case. -->
+						<gml:pos>
+							0 0 0.1
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Image>
+							<href xlink:href="images/lgbt.jpg" />
+						</Image>
+					</assets>
+				</RelativeTo>
+
+			</anchors>
+		</Feature>
+	</ARElements>
+</arml>
