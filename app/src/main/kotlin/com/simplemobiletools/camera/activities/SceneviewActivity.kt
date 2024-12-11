@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.*
 import androidx.lifecycle.lifecycleScope
 import com.google.ar.core.*
+import com.google.ar.core.exceptions.NotYetAvailableException
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.ar.arml.ARMLParser
 import com.simplemobiletools.camera.ar.arml.elements.*
@@ -24,8 +25,7 @@ import com.simplemobiletools.camera.databinding.ActivitySceneviewBinding
 import com.simplemobiletools.camera.extensions.config
 import com.simplemobiletools.commons.extensions.viewBinding
 import dev.romainguy.kotlin.math.Float3
-import io.github.sceneview.ar.arcore.distanceTo
-import io.github.sceneview.ar.arcore.getUpdatedPlanes
+import io.github.sceneview.ar.arcore.*
 import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.math.Position
@@ -130,16 +130,20 @@ class SceneviewActivity : SimpleActivity() {
 		const val DISTANCE_ROLLING_AVG_N = 3
 		const val DEADZONE = 0.1 //%
 		const val TAG = "ARML"
-
-		val trackerMap : HashMap<String, Plane.Type> = HashMap(
-			mapOf(
-				Pair("#genericPlaneTracker", Plane.Type.HORIZONTAL_UPWARD_FACING),
-				Pair("#genericHUPlaneTracker", Plane.Type.HORIZONTAL_UPWARD_FACING),
-				Pair("#genericHDPlaneTracker", Plane.Type.HORIZONTAL_DOWNWARD_FACING),
-				Pair("#genericVPlaneTracker", Plane.Type.VERTICAL),
-			)
-		)
 	}
+
+	private val trackerHandler : HashMap<String, (Trackable) -> Unit> = HashMap(
+		mapOf(
+			Pair("#genericPlaneTracker") { it.addToPlaneQueue(Plane.Type.HORIZONTAL_UPWARD_FACING) },
+			Pair("#genericHUPlaneTracker") { it.addToPlaneQueue(Plane.Type.HORIZONTAL_UPWARD_FACING) },
+			Pair("#genericHDPlaneTracker") { it.addToPlaneQueue(Plane.Type.HORIZONTAL_DOWNWARD_FACING) },
+			Pair("#genericVPlaneTracker") { it.addToPlaneQueue(Plane.Type.VERTICAL) },
+			Pair("#genericImageTracker") { it.addToImageQueue() },
+			Pair("#genericFaceTracker") { it.addToFaceQueue() },
+			Pair("#genericSceneFeatureTracker") { it.addToSceneFeatureQueue() },
+			Pair("#genericSceneGeometryTracker") { it.addToSceneGeometryQueue() },
+		)
+	)
 
 	private val arElementHandlers : EnumMap<ARElementType, (ARElement) -> Unit> = EnumMap(
 		mapOf<ARElementType, (ARElement) -> Unit>(
@@ -270,6 +274,22 @@ class SceneviewActivity : SimpleActivity() {
 					true -> Config.DepthMode.AUTOMATIC
 					else -> Config.DepthMode.DISABLED
 				}
+
+				// Set camera direction
+				//val filter = CameraConfigFilter(session).setFacingDirection(CameraConfig.FacingDirection.FRONT)
+				//val cameraConfig = session.getSupportedCameraConfigs(filter)[0]
+				//session.cameraConfig = cameraConfig
+
+				// Enable features (AugmentedFaces, AugmentedImages, ...)
+				//TODO: Enable or disable features as necessary
+				config.augmentedFaceMode = Config.AugmentedFaceMode.MESH3D
+				config.augmentedImageDatabase = AugmentedImageDatabase(session) //TODO: Load database or extend in some way.
+				if (session.isSemanticModeSupported(Config.SemanticMode.ENABLED)) {
+					config.semanticMode = Config.SemanticMode.ENABLED
+				}
+				//TODO: Might need API in Google cloud project
+				config.geospatialMode = Config.GeospatialMode.ENABLED //FIXME: AR_ERROR_GOOGLE_PLAY_SERVICES_LOCATION_LIBRARY_NOT_LINKED
+				config.streetscapeGeometryMode = Config.StreetscapeGeometryMode.ENABLED
 			}
 			onSessionUpdated = { session, frame ->
 				thingsToDo.forEach {it(session, frame)}
@@ -413,8 +433,16 @@ class SceneviewActivity : SimpleActivity() {
 			updateSceneRequested = true
 		}
 
-	// Trackables waiting for an AnchorNode go in here vvv
+	// Trackables waiting for an AnchorNode (Plane) go in here vvv
 	private val queuedAnchors : EnumMap<Plane.Type, ArrayList<Trackable>> = EnumMap(Plane.Type.entries.associateWith { ArrayList() })
+	// Trackables waiting for an AnchorNode (Image) go in here vvv
+	private val queuedImages : ArrayList<Trackable> = ArrayList()
+	// Trackables waiting for an AnchorNode (Face) go in here vvv
+	private val queuedFaces : ArrayList<Trackable> = ArrayList()
+	// Trackables waiting for an AnchorNode (Scene Feature) go in here vvv
+	private val queuedSceneFeatures : ArrayList<Trackable> = ArrayList()
+	// Trackables waiting for an AnchorNode (Scene Geometry) go in here vvv
+	private val queuedSceneGeometries : ArrayList<Trackable> = ArrayList()
 
 	// RelativeTo waiting for Anchors go in here vvv
 	private val queuedRelativeAnchors : HashMap<Anchor, ArrayList<RelativeTo>> = HashMap()
@@ -548,11 +576,53 @@ class SceneviewActivity : SimpleActivity() {
 		// Process ARML
 		this.elements.forEach { it.handle() }
 
-		// OnFrameUpdate: Detect and assign anchors to elements in queue
+		// OnFrameUpdate: Detect and assign anchors to elements in plane queue
 		thingsToDo.add { _, frame ->
 			val planes = frame.getUpdatedPlanes()
 			assignPlanes(planes)
 		}
+
+		// OnFrameUpdate: Detect and assign anchors to elements in image queue
+		thingsToDo.add { _, frame ->
+			val images = frame.getUpdatedAugmentedImages()
+			assignImages(images)
+		}
+
+		// OnFrameUpdate: Detect and assign anchors to elements in face queue
+		thingsToDo.add { _, frame ->
+			val faces = frame.getUpdatedAugmentedFaces()
+			assignFaces(faces)
+		}
+
+		// OnFrameUpdate: Detect and assign anchors to elements in scene feature queue
+		thingsToDo.add { _, frame ->
+			try {
+				val semanticImage = frame.acquireSemanticImage()
+				val confidenceImage = frame.acquireSemanticConfidenceImage()
+				val fraction = frame.getSemanticLabelFraction(SemanticLabel.SKY)
+				//assignSceneFeatures() //TODO
+			} catch (e: NotYetAvailableException) {
+				//ignore
+				return@add
+			}
+		}
+
+		// OnFrameUpdate: Detect and assign anchors to elements in scene geometry queue
+		thingsToDo.add { _, frame ->
+			val sceneGeometries = frame.getUpdatedStreetscapeGeometries()
+			val sceneGeometry = sceneGeometries.firstOrNull() ?: return@add
+			when (val geometryType = sceneGeometry.type) {
+				StreetscapeGeometry.Type.BUILDING -> {  }
+				StreetscapeGeometry.Type.TERRAIN -> {  }
+				else -> {
+					Log.w(TAG, "Got unknown geometry type: $geometryType")
+				}
+			}
+			//TODO: ...
+		}
+
+		//TODO: Geospatial Anchors
+		//...
 
 		// OnFrameUpdate: Check conditions
 		thingsToDo.add { _, _ -> conditionalVisualAssets.forEach { it.checkConditions() } }
@@ -601,9 +671,50 @@ class SceneviewActivity : SimpleActivity() {
 		}
 	}
 
+	private fun assignImages(images: Collection<AugmentedImage>) {
+		//TODO
+		for (img in images) {
+			if (img.trackingState == TrackingState.TRACKING) {
+				when (img.trackingMethod) {
+					AugmentedImage.TrackingMethod.LAST_KNOWN_POSE -> {
+						// The planar target is currently being tracked based on its last known pose.
+					}
+					AugmentedImage.TrackingMethod.FULL_TRACKING -> {
+						// The planar target is being tracked using the current camera image.
+					}
+					AugmentedImage.TrackingMethod.NOT_TRACKING -> {
+						// The planar target isn't been tracked.
+					}
+				}
+
+				//TODO: Look into indexes
+				when (img.name) {
+					"dog" -> TODO("Render a 3D version of a dog at img.getCenterPose()")
+					"cat" -> TODO("Render a 3D version of a cat at img.getCenterPose()")
+				}
+			}
+		}
+	}
+
+	private fun assignFaces(faces: Collection<AugmentedFace>) {
+		//TODO
+		faces.forEach { face ->
+			if (face.trackingState == TrackingState.TRACKING) {
+				// UVs and indices can be cached as they do not change during the session.
+				val uvs = face.meshTextureCoordinates
+				val indices = face.meshTriangleIndices
+				// Center and region poses, mesh vertices, and normals are updated each frame.
+				val facePose = face.centerPose
+				val faceVertices = face.meshVertices
+				val faceNormals = face.meshNormals
+				// Render the face using these values with OpenGL.
+			}
+		}
+	}
+
 	private fun Feature.handle() {
 		if (!this.enabled) return
-		Log.d(TAG, "Got Feature $this")
+		//Log.d(TAG, "Got Feature $this")
 		this.anchors.forEach { it.handle() }
 	}
 
@@ -617,19 +728,49 @@ class SceneviewActivity : SimpleActivity() {
 
 	private fun Trackable.handle() {
 		if (!this.enabled) return
-		Log.d(TAG, "Got Trackable $this")
+		//Log.d(TAG, "Got Trackable $this")
 
 		this.sortedConfig.forEach {
-			val planeType = trackerMap[it.tracker] ?: return@forEach
-			queuedAnchors[planeType]!!.putIfAbsent(this)
-			Log.d(TAG, "Waiting for anchor for $this")
-			return
+			trackerHandler.getOrElse(it.tracker) {
+				Log.w(TAG, "Got an unknown tracker: ${it.tracker}")
+				null
+			}?.invoke(this)
 		}
+	}
+
+	private fun Trackable.addToPlaneQueue(planeType: Plane.Type) {
+		queuedAnchors[planeType]!!.putIfAbsent(this)
+		Log.d(TAG, "Waiting for anchor (Plane) for $this")
+		return
+	}
+
+	private fun Trackable.addToImageQueue() {
+		queuedImages.putIfAbsent(this)
+		Log.d(TAG, "Waiting for anchor (Image) for $this")
+		return
+	}
+
+	private fun Trackable.addToFaceQueue() {
+		queuedFaces.putIfAbsent(this)
+		Log.d(TAG, "Waiting for anchor (Face) for $this")
+		return
+	}
+
+	private fun Trackable.addToSceneFeatureQueue() {
+		queuedSceneFeatures.putIfAbsent(this)
+		Log.d(TAG, "Waiting for anchor (Scene Feature) for $this")
+		return
+	}
+
+	private fun Trackable.addToSceneGeometryQueue() {
+		queuedSceneGeometries.putIfAbsent(this)
+		Log.d(TAG, "Waiting for anchor (Scene Geometry) for $this")
+		return
 	}
 
 	private fun RelativeTo.handle() {
 		if (!this.enabled) return
-		Log.d(TAG, "Got RelativeTo $this")
+		//Log.d(TAG, "Got RelativeTo $this")
 
 		if (this.ref == "#user") {
 			//TODO
@@ -702,6 +843,7 @@ class SceneviewActivity : SimpleActivity() {
 		lifecycleScope.launch {
 			isLoading = true
 
+			//TODO: Confirm that this indeed fetches remote models
 			val modelInstance = sceneView.modelLoader.loadModelInstance(model.href)
 
 			modelInstance?.apply {
@@ -746,6 +888,7 @@ class SceneviewActivity : SimpleActivity() {
 		lifecycleScope.launch {
 			isLoading = true
 
+			//TODO: Fetch remote image
 			val bitmap = BitmapFactory.decodeStream(assets.open(image.href))
 
 			val imageNode = ImageNode(
