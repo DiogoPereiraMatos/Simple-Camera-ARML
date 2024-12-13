@@ -1,6 +1,7 @@
-import java.io.FileInputStream
+
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.konan.properties.Properties
+import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android)
@@ -103,10 +104,7 @@ dependencies {
 	implementation(libs.simple.xml)
 	implementation(libs.junit.v412)
 
-	// ARCore
-    //implementation(libs.core)
+	// ARCore/Sceneview
     implementation(libs.obj)
-	// vv Sceneview vv
-	//implementation(libs.sceneview)
 	implementation(libs.arsceneview)
 }

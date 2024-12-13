@@ -18,6 +18,7 @@
 				</Trackable>
 
 				<RelativeTo id="flagAnchor">
+					<enabled>false</enabled>
 					<ref xlink:href="centreAnchor" />
 					<gml:Point id="flagOffset" srsDimension="3"> <!-- TODO: Would probably be 2 in this case. -->
 						<gml:pos>
