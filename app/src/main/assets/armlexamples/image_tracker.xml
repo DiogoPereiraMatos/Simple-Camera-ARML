@@ -7,7 +7,7 @@
 				<Trackable id="centreAnchor">
 					<config>
 						<tracker xlink:href="#genericImageTracker" />
-						<src>images/earth.jpg</src>
+						<src>good_images/earth.jpg</src>
 					</config>
 					<assets>
 						<Model id="earthModel">

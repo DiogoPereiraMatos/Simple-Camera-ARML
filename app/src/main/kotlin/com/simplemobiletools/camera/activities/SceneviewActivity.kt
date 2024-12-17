@@ -24,6 +24,7 @@ import com.simplemobiletools.camera.databinding.ActivitySceneviewBinding
 import com.simplemobiletools.camera.extensions.config
 import com.simplemobiletools.commons.extensions.viewBinding
 import dev.romainguy.kotlin.math.Float3
+import io.github.sceneview.ar.arcore.addAugmentedImage
 import io.github.sceneview.ar.arcore.distanceTo
 import io.github.sceneview.ar.arcore.getUpdatedAugmentedImages
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
@@ -139,7 +140,7 @@ class SceneviewActivity : SimpleActivity() {
 			Pair("#genericHUPlaneTracker") { trackable, _ -> trackable.addToPlaneQueue(Plane.Type.HORIZONTAL_UPWARD_FACING) },
 			Pair("#genericHDPlaneTracker") { trackable, _ -> trackable.addToPlaneQueue(Plane.Type.HORIZONTAL_DOWNWARD_FACING) },
 			Pair("#genericVPlaneTracker") { trackable, _ -> trackable.addToPlaneQueue(Plane.Type.VERTICAL) },
-			Pair("#genericImageTracker") { trackable, config -> enableAugmentedImagesFeature(); trackable.addToImageQueue(config) },
+			Pair("#genericImageTracker") { trackable, config -> trackable.addToImageQueue(config) },
 		)
 	)
 
@@ -193,9 +194,7 @@ class SceneviewActivity : SimpleActivity() {
 	private val projectConfig
 		get() = this.config
 
-	// Save reference to AugmentedImageDatabase so that it can be extended as the application runs
-	private val imageDatabase
-		get() = sceneView.session?.config?.augmentedImageDatabase
+	private lateinit var imageDatabase: AugmentedImageDatabase
 
 	private var updateSceneRequested : Boolean = false
 
@@ -287,6 +286,17 @@ class SceneviewActivity : SimpleActivity() {
 				config.updateMode = Config.UpdateMode.LATEST_CAMERA_IMAGE
 				config.planeFindingMode = Config.PlaneFindingMode.DISABLED
 				 */
+
+				imageDatabase = AugmentedImageDatabase(session)
+				val imageList = listAssets("good_images")
+				imageList!!.forEach { path ->
+					val bitmap = BitmapFactory.decodeStream(projectAssets.open(path))
+					imageDatabase.addImage(path, bitmap)
+					config.addAugmentedImage(session, path, bitmap)
+					Log.d(TAG, "Added Image $path to database")
+				}
+
+				//TODO: Enable or disable features as necessary
 			}
 			onSessionUpdated = { session, frame ->
 				thingsToDo.forEach { it(session, frame) }
@@ -304,15 +314,6 @@ class SceneviewActivity : SimpleActivity() {
 				}
 			)
 		}
-	}
-
-	//TODO: Enable or disable features as necessary
-	private fun enableAugmentedImagesFeature() {
-		if (sceneView.session == null) {
-			Log.d(TAG, "Failed to enable Augmented Images.")
-			return
-		}
-		sceneView.session!!.config.augmentedImageDatabase = AugmentedImageDatabase(sceneView.session)
 	}
 
 	private fun setupButtons() {
@@ -642,13 +643,19 @@ class SceneviewActivity : SimpleActivity() {
 
 	private fun assignImages(images: Collection<AugmentedImage>) {
 		images.forEach { img ->
-			Log.d(TAG, "Detected Image: ${img.name}")
+			if (img.trackingState != TrackingState.TRACKING) {
+				Log.d(TAG, "Detected Image: ${img.name}; idx=${img.index}; tracking=${img.trackingState}")
+				return@forEach
+			}
+
 			if (!queuedImages.containsKey(img.name))
 				return@forEach
 
 			val waiting = queuedImages[img.name]!!
 			if (waiting.isEmpty())
 				return@forEach
+
+			Log.d(TAG, "Detected Image: ${img.name}; idx=${img.index}; tracking=${img.trackingState}")
 
 			// Create google.Anchor from Image
 			val anchor = img.createAnchor(img.centerPose)
@@ -700,11 +707,15 @@ class SceneviewActivity : SimpleActivity() {
 	}
 
 	private fun Trackable.addToImageQueue(config: TrackableConfig) {
-		if (imageDatabase == null)
-			throw Exception("imageDatabase not initialized")
-
+		//TODO: Fetch remote
 		val bitmap = BitmapFactory.decodeStream(projectAssets.open(config.src))
-		imageDatabase!!.addImage(config.src, bitmap)
+		imageDatabase.addImage(config.src, bitmap)
+		Log.d(TAG, "Added Image ${config.src} to database")
+
+		val sessionConfig = Config(sceneView.session)
+		sessionConfig.augmentedImageDatabase = imageDatabase
+		sceneView.session!!.configure(sessionConfig)
+
 		queuedImages.putIfAbsent(config.src, ArrayList())
 		queuedImages[config.src]!!.putIfAbsent(this)
 		Log.d(TAG, "Waiting for anchor (Image; src=${config.src}) for $this")
