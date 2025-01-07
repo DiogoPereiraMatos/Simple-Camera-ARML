@@ -13,9 +13,9 @@
 						<Model id="earthModel">
 							<href xlink:href="models/Earth/Earth.gltf" />
 							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
 							</Scale>
 						</Model>
 					</assets>

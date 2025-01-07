@@ -1,0 +1,23 @@
+
+<arml xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<ARElements>
+
+		<Feature id="testFeature">
+			<anchors>
+
+				<Trackable id="centreAnchor">
+					<config>
+						<tracker xlink:href="#genericHUPlaneTracker" />
+						<src>look for a plane, idk</src>
+					</config>
+					<assets>
+						<Model id="axisModel">
+							<href xlink:href="models/XYZ.glb" />
+						</Model>
+					</assets>
+				</Trackable>
+
+			</anchors>
+		</Feature>
+	</ARElements>
+</arml>
