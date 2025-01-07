@@ -31,7 +31,7 @@ class SelectionModule(
 			onDoubleTap = { event, node ->
 				Log.d(TAG, "Double tapped ( ${event.x} , ${event.y} ). Node: $node. Hit: ${sceneView.hitTestAR().toString()}")
 				node?.onDoubleTap(event)
-				isSelected.keys.forEach { toggleSelected(it) }  //FIXME: Temporary
+				//isSelected.keys.forEach { toggleSelected(it) }  //FIXME: Temporary
 			}
 		)
 
@@ -63,7 +63,7 @@ class SelectionModule(
 
 	fun setSelected(visualAsset: VisualAsset, selected: Boolean) {
 		isSelected[visualAsset] = selected
-		Log.d(TAG, "${if (selected) "Selected" else "Unselected" } $this")
+		Log.d(TAG, "${if (selected) "Selected" else "Unselected" } $visualAsset")
 	}
 
 	fun select(visualAsset: VisualAsset) {

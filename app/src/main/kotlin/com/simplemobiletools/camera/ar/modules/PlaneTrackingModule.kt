@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.Plane
+import com.google.ar.core.TrackingState
 import com.simplemobiletools.camera.ar.SceneController
 import com.simplemobiletools.camera.ar.SceneState
 import com.simplemobiletools.camera.ar.arml.elements.Trackable
@@ -93,7 +94,9 @@ class PlaneTrackingModule(
 
 		types.forEach { type ->
 			val plane = planes.firstOrNull { it.type == type } ?: return@forEach
-			//Log.d(TAG, "Found $type plane!")
+
+			if (plane.trackingState == TrackingState.PAUSED || plane.trackingState == TrackingState.STOPPED)
+				return@forEach
 
 			// Get Trackables waiting for that type of plane
 			val waiting = getQueuedAnchors(type)

@@ -11,7 +11,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.*
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.ar.SceneController
-import com.simplemobiletools.camera.ar.SceneState
 import com.simplemobiletools.camera.ar.listAssets
 import com.simplemobiletools.camera.databinding.ActivitySceneviewBinding
 import com.simplemobiletools.camera.extensions.config
@@ -94,7 +93,7 @@ import com.simplemobiletools.commons.extensions.viewBinding
 class SceneviewActivity : SimpleActivity() {
 
 	// Log filter:
-	// package:mine tag:SCENE | tag:FEATURE | (level:error & -message:motion_tracking_context & -message:static_feature_frame_selector & -message:hit_test & -message:vio_initializer)
+	// package:mine tag~:SCENE.* | tag~:.*MODULE | (level:error & -message:motion_tracking_context & -message:static_feature_frame_selector & -message:hit_test & -message:vio_initializer)
 
 	companion object {
 		const val TAG = "SCENE_ACTIVITY"
@@ -108,8 +107,8 @@ class SceneviewActivity : SimpleActivity() {
 	private val projectConfig
 		get() = this.config
 
-	private val sceneState = SceneState(sceneView)
-	private val sceneController = SceneController(this, sceneView, sceneState)
+	private var selectedARMLPath : String = "armlexamples/empty.xml"
+	private lateinit var sceneController: SceneController
 
 
 	override fun onCreate(savedInstanceState: Bundle?) {
@@ -124,14 +123,18 @@ class SceneviewActivity : SimpleActivity() {
 		setupWindow()
 		setupButtons()
 
-		sceneController.armlPath = intent.getStringExtra(Intent.EXTRA_TEXT) ?: sceneController.armlPath
-		sceneController.setupSceneView()
+		sceneController = SceneController(this, sceneView)
+		intent.getStringExtra(Intent.EXTRA_TEXT)?.let {
+			sceneController.setARMLFromPath(it)
+		}
 	}
 
 	override fun onResume() {
 		super.onResume()
-		if (!this.projectConfig.isArmlEnabled)
+		if (!this.projectConfig.isArmlEnabled) {
+			sceneController.stop()
 			this.finish()
+		}
 
 		window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 		window.navigationBarColor = ContextCompat.getColor(this, android.R.color.transparent)
@@ -191,12 +194,16 @@ class SceneviewActivity : SimpleActivity() {
 	}
 
 	private fun launchARMLSettingsMenuDialog() {
-		val strings = projectAssets.listAssets("armlexamples")!!
-			.toTypedArray()
+		val strings : Array<String> = projectAssets.listAssets("armlexamples")?.toTypedArray() ?: Array(0) {null.toString()}
 
 		AlertDialog.Builder(this)
 			.setTitle("ARML")
-			.setSingleChoiceItems(strings, strings.indexOf(sceneController.armlPath)) { _, which -> sceneController.armlPath = strings[which] }
+			.setSingleChoiceItems(strings, strings.indexOf(selectedARMLPath)) { _, which ->
+				run {
+					sceneController.setARMLFromPath(strings[which])
+					selectedARMLPath = strings[which]
+				}
+			}
 			.show()
 	}
 

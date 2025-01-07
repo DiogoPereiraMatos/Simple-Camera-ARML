@@ -3,6 +3,7 @@ package com.simplemobiletools.camera.ar
 import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.core.view.isGone
+import androidx.lifecycle.lifecycleScope
 import com.google.ar.core.Config
 import com.google.ar.core.Frame
 import com.google.ar.core.Plane
@@ -18,33 +19,39 @@ import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.utils.readBuffer
+import kotlinx.coroutines.launch
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 class SceneController(
 	private val context: SceneviewActivity,
 	private val sceneView: ARSceneView,
-	private val sceneState: SceneState = SceneState(sceneView),
-	val selectionModule: SelectionModule = SelectionModule(sceneView, sceneState),
-	val distanceModule: DistanceModule = DistanceModule(sceneView, sceneState),
-	private val planeTrackingModule: PlaneTrackingModule = PlaneTrackingModule(sceneView, sceneState),
-	private val imageTrackingModule: ImageTrackingModule = ImageTrackingModule(sceneView, sceneState)
 ) {
 
 	companion object {
 		private const val TAG = "SCENE_CONTROLLER"
 	}
 
+	// Initialized in session config
+	// not strictly required, but some might need access to the session (e.g. imageTracking)
+	lateinit var selectionModule: SelectionModule
+	lateinit var distanceModule: DistanceModule
+	private lateinit var planeTrackingModule: PlaneTrackingModule
+	private lateinit var imageTrackingModule: ImageTrackingModule
 
+	private val sceneState: SceneState = SceneState(context, sceneView)
 	private val sceneLoader : SceneLoader = SceneLoader(this, sceneState)
 	val trackerHandler = sceneLoader.trackerHandler
 	val arElementHandlers = sceneLoader.arElementHandlers
 	val anchorHandlers = sceneLoader.anchorHandlers
 	val relativeToRefHandler = sceneLoader.relativeToRefHandler
-	private val conditionHandlers = sceneLoader.conditionHandlers
+	val conditionHandlers = sceneLoader.conditionHandlers
 	val assetHandlers = sceneLoader.assetHandlers
 
 
 	// Keep track of functions to execute every frame (e.g. checking conditions); organize by ID
 	private val thingsToDo : HashMap<String, ((Session, Frame) -> Unit)> = HashMap()
+
+	private val stateLock: ReentrantReadWriteLock = ReentrantReadWriteLock()
 
 	private var execute: Boolean = false
 	fun run() { execute = true }
@@ -68,50 +75,7 @@ class SceneController(
 			context.binding.instructionText.text = instructionText
 		}
 
-
-	//=== ARML ===//
-
-	var armlPath : String = "armlexamples/empty.xml"
-		// On update, read new arml content
-		set(value) {
-			if (field != value) {
-				Log.d(TAG, "Set armlPath to $value")
-				try {
-					armlContent = context.assets.open(value).readBuffer().array().decodeToString()
-					field = value
-				} catch (e : Exception) {
-					Log.e(TAG, "Failed to read ARML file.", e)
-					instructionText = "Failed to read ARML file!"
-				}
-			}
-		}
-	var armlContent : String = ARMLParser.EMPTY
-		// On update, parse new ARML
-		set(value) {
-			try {
-				val result : ARML = ARMLParser().loads(value)
-
-				val validation = result.validate()
-				if (!validation.first) {
-					Log.e(TAG, "Invalid ARML: ${validation.second}")
-					instructionText = "Invalid ARML!"
-				} else {
-					arml = result
-					field = value
-				}
-			} catch (e : Exception) {
-				Log.e(TAG, "Failed to parse ARML.", e)
-				instructionText = "Failed to parse ARML!"
-			}
-		}
-	var arml : ARML = ARML()
-		set(value) {
-			field = value
-			Log.d(TAG, "Set arml to $arml")
-			requestSceneUpdate()
-		}
-
-	fun setupSceneView() {
+	init {
 		sceneView.apply {
 			configureSession { session, config ->
 				config.depthMode = when (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
@@ -120,9 +84,17 @@ class SceneController(
 				}
 				config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
 				config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
+
+				selectionModule = SelectionModule(sceneView, sceneState)
+				distanceModule = DistanceModule(sceneView, sceneState)
+				planeTrackingModule = PlaneTrackingModule(sceneView, sceneState)
+				imageTrackingModule = ImageTrackingModule(sceneView, sceneState, session)
 			}
 			onSessionUpdated = { session, frame ->
-				if (execute) thingsToDo.values.forEach { it(session, frame) }
+				if (execute) {
+					val thingsToDoNow = ArrayList(thingsToDo.values)  // clone
+					thingsToDoNow.forEach { it(session, frame) }
+				}
 			}
 			onTrackingFailureChanged = { reason ->
 				this@SceneController.instructionText = reason?.getDescription(context) ?: instructionText
@@ -139,36 +111,80 @@ class SceneController(
 		// OnFrameUpdate: Refresh scene when requested
 		// Only add this at the end. clearScene clears thingsToDo list, so there will be a problem with concurrency
 		thingsToDo["RefreshScene"] = { _, _ ->
-			if (updateSceneRequested)
-				updateScene()
+			if (updateSceneRequested) {
+				stop()
+				updateSceneRequested = false
+				isLoading = true
+
+				// Clear previous scene
+				Log.d(TAG, "Clearing scene...")
+				sceneState.reset()
+
+				thingsToDo.remove("PlaneTracking")
+				planeTrackingModule.disable()
+				planeTrackingModule.reset()
+
+				thingsToDo.remove("ImageTracking")
+				imageTrackingModule.disable()
+				imageTrackingModule.reset()
+
+				Log.d(TAG, "Clearing scene... DONE!")
+
+				// Load new one
+				sceneLoader.load(arml)
+
+				isLoading = false
+				run()
+			}
 		}
 	}
 
-	private fun updateScene() {
-		stop()
-		updateSceneRequested = false
-		isLoading = true
 
-		clearScene()
-		sceneLoader.load(arml)
 
-		isLoading = false
-		run()
-	}
+	//=== ARML ===//
+	private var arml : ARML = ARML()
+		get() {
+			stateLock.readLock().lock()
+			val result = field
+			stateLock.readLock().unlock()
+			return result
+		}
+		set(value) {
+			stateLock.writeLock().lock()
+			field = value
+			Log.d(TAG, "Set arml to $value")
+			requestSceneUpdate()
+			stateLock.writeLock().unlock()
+		}
 
-	private fun clearScene() {
-		Log.d(TAG, "Clearing scene...")
-		sceneState.reset()
+	fun setARMLFromPath(armlPath: String) {
+		Log.d(TAG, "Set armlPath to $armlPath")
 
-		thingsToDo.remove("PlaneTracking")
-		planeTrackingModule.disable()
-		planeTrackingModule.reset()
+		// Read content
+		val armlContent = try {
+			context.assets.open(armlPath).readBuffer().array().decodeToString()
+		} catch (e : Exception) {
+			Log.e(TAG, "Failed to read ARML file.", e)
+			instructionText = "Failed to read ARML file!"
+			throw e
+		}
 
-		thingsToDo.remove("ImageTracking")
-		imageTrackingModule.disable()
-		imageTrackingModule.reset()
+		// Parse ARML
+		try {
+			val result : ARML = ARMLParser().loads(armlContent)
 
-		Log.d(TAG, "Clearing scene... DONE!")
+			val validation = result.validate()
+			if (!validation.first) {
+				Log.e(TAG, "Invalid ARML: ${validation.second}")
+				instructionText = "Invalid ARML!"
+			} else {
+				arml = result
+			}
+		} catch (e : Exception) {
+			Log.e(TAG, "Failed to parse ARML.", e)
+			instructionText = "Failed to parse ARML!"
+			throw e
+		}
 	}
 
 
@@ -192,7 +208,9 @@ class SceneController(
 	fun handleImageTracker(trackable: Trackable, config: TrackableConfig) {
 		if (!imageTrackingModule.isEnabled()) {
 			imageTrackingModule.enable()
+			//loopLock.writeLock().lock()
 			thingsToDo["ImageTracking"] = { _, frame -> imageTrackingModule.onFrameUpdate(this, frame) }
+			//loopLock.writeLock().unlock()
 		}
 
 		//TODO: Fetch remote
@@ -204,26 +222,32 @@ class SceneController(
 	fun handlePlaneTracker(trackable: Trackable, planeType: Plane.Type) {
 		if (!planeTrackingModule.isEnabled()) {
 			planeTrackingModule.enable()
+			//loopLock.writeLock().lock()
 			thingsToDo["PlaneTracking"] = { _, frame -> planeTrackingModule.onFrameUpdate(this, frame) }
+			//loopLock.writeLock().unlock()
 		}
 
 		planeTrackingModule.addToPlaneQueue(trackable, planeType)
 	}
 
 	fun attachModel(anchorNode: AnchorNode, model: Model) {
-		val modelNode = sceneState.attachModel(anchorNode, model, show = model.evaluateConditions())
+		context.lifecycleScope.launch {
+			val modelNode = sceneState.attachModel(anchorNode, model, show = model.evaluateConditions())
 
-		//FIXME: Not working
-		selectionModule.setSelected(model, false)
-		modelNode?.onDoubleTap = { selectionModule.toggleSelected(model); true }
+			//FIXME: Not working
+			selectionModule.setSelected(model, false)
+			modelNode?.onDoubleTap = { selectionModule.toggleSelected(model); true }
+		}
 	}
 
 	fun attachImage(anchorNode: AnchorNode, image: Image) {
-		val imageNode =sceneState.attachImage(anchorNode, image, show = image.evaluateConditions())
+		//context.lifecycleScope.launch {
+			val imageNode = sceneState.attachImage(anchorNode, image, show = image.evaluateConditions())
 
-		//FIXME: Not working
-		selectionModule.setSelected(image, false)
-		imageNode?.onDoubleTap = { selectionModule.toggleSelected(image); true }
+			//FIXME: Not working
+			selectionModule.setSelected(image, false)
+			imageNode?.onDoubleTap = { selectionModule.toggleSelected(image); true }
+		//}
 	}
 
 

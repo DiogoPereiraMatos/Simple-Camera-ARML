@@ -2,6 +2,7 @@ package com.simplemobiletools.camera.ar
 
 import android.graphics.BitmapFactory
 import android.util.Log
+import com.simplemobiletools.camera.activities.SceneviewActivity
 import com.simplemobiletools.camera.ar.arml.elements.*
 import com.simplemobiletools.camera.ar.arml.elements.gml.Point
 import io.github.sceneview.ar.ARSceneView
@@ -13,9 +14,9 @@ import io.github.sceneview.model.setGlobalBlendOrderEnabled
 import io.github.sceneview.node.ImageNode
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
-import kotlinx.coroutines.runBlocking
 
 class SceneState(
+	private val context: SceneviewActivity,
 	private val sceneView: ARSceneView
 ) {
 	/*
@@ -211,15 +212,9 @@ class SceneState(
 		sceneView.addChildNode(anchorNode)
 	}
 
-	fun attachModel(anchorNode: AnchorNode, model: Model, show: Boolean = true): ModelNode? {
-		val modelInstance = runBlocking {
-			//TODO: Confirm that this indeed fetches remote models
-			val modelInstance = sceneView.modelLoader.loadModelInstance(model.href)
-			return@runBlocking modelInstance
-		}
-
-		if (modelInstance == null)
-			return null
+	suspend fun attachModel(anchorNode: AnchorNode, model: Model, show: Boolean = true): ModelNode? {
+		//TODO: Confirm that this indeed fetches remote models
+		val modelInstance = sceneView.modelLoader.loadModelInstance(model.href) ?: return null
 
 		modelInstance.apply {
 			//setPriority(7)
@@ -254,14 +249,8 @@ class SceneState(
 	}
 
 	fun attachImage(anchorNode: AnchorNode, image: Image, show: Boolean = true): ImageNode? {
-		val bitmap = runBlocking {
-			//TODO: Fetch remote image
-			val bitmap = BitmapFactory.decodeStream(projectAssets.open(image.href))
-			return@runBlocking bitmap
-		}
-
-		if (bitmap == null)
-			return null
+		//TODO: Fetch remote image
+		val bitmap = BitmapFactory.decodeStream(projectAssets.open(image.href)) ?: return null
 
 		val imageNode = ImageNode(
 			materialLoader = sceneView.materialLoader,

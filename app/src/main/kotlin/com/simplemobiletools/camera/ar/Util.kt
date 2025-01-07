@@ -9,7 +9,7 @@ import io.github.sceneview.math.Position
 
 
 fun AssetManager.listAssets(path: String): ArrayList<String>? {
-	val fileOrFolder = this.list(path)!!
+	val fileOrFolder = this.list(path) ?: return null
 	if (fileOrFolder.isEmpty())
 		return null
 

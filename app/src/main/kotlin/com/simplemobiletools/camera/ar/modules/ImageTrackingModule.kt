@@ -13,14 +13,15 @@ import io.github.sceneview.ar.arcore.getUpdatedAugmentedImages
 
 class ImageTrackingModule(
 	private val sceneView: ARSceneView,
-	private val sceneState: SceneState
+	private val sceneState: SceneState,
+	session: Session  // Only used to initialize AugmentedImageDatabase. Just to make sure we have a session...
 ) : ARTrackingModule {
 
 	companion object {
 		private const val TAG = "IMAGE_TRACKING_MODULE"
 	}
 
-	private var imageDatabase = AugmentedImageDatabase(sceneView.session)
+	private var imageDatabase = AugmentedImageDatabase(session)
 
 	// Trackables waiting for an AnchorNode (Image) go in here vvv
 	private val queuedImages : HashMap<String, ArrayList<Trackable>> = HashMap()
