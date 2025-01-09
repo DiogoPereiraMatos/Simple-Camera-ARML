@@ -26,14 +26,14 @@ class SelectionModule(
 		if (isEnabled)
 			return
 
+		/*
 		sceneView.setOnGestureListener(
-			//FIXME: Notify relevant node (good luck with the hit tests :P)
 			onDoubleTap = { event, node ->
 				Log.d(TAG, "Double tapped ( ${event.x} , ${event.y} ). Node: $node. Hit: ${sceneView.hitTestAR().toString()}")
 				node?.onDoubleTap(event)
-				//isSelected.keys.forEach { toggleSelected(it) }  //FIXME: Temporary
 			}
 		)
+		 */
 
 		isEnabled = true
 	}

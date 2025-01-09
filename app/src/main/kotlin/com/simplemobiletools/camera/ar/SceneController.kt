@@ -244,7 +244,6 @@ class SceneController(
 		context.lifecycleScope.launch {
 			val modelNode = sceneState.attachModel(anchorNode, model, show = model.evaluateConditions())
 
-			//FIXME: Not working
 			selectionModule.setSelected(model, false)
 			modelNode?.onDoubleTap = { selectionModule.toggleSelected(model); true }
 		}
@@ -254,7 +253,6 @@ class SceneController(
 		//context.lifecycleScope.launch {
 			val imageNode = sceneState.attachImage(anchorNode, image, show = image.evaluateConditions())
 
-			//FIXME: Not working
 			selectionModule.setSelected(image, false)
 			imageNode?.onDoubleTap = { selectionModule.toggleSelected(image); true }
 		//}
