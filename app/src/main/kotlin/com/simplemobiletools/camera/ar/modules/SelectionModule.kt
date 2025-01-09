@@ -1,15 +1,15 @@
 package com.simplemobiletools.camera.ar.modules
 
 import android.util.Log
-import com.simplemobiletools.camera.ar.SceneState
+import com.simplemobiletools.camera.ar.SceneController
 import com.simplemobiletools.camera.ar.arml.elements.Condition
 import com.simplemobiletools.camera.ar.arml.elements.SelectedCondition
 import com.simplemobiletools.camera.ar.arml.elements.VisualAsset
 import io.github.sceneview.ar.ARSceneView
 
 class SelectionModule(
+	private val sceneController: SceneController,
 	private val sceneView: ARSceneView,
-	private val sceneState: SceneState
 ) : ARConditionModule {
 
 	companion object {

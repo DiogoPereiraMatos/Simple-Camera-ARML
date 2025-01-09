@@ -6,7 +6,6 @@ import com.google.ar.core.Frame
 import com.google.ar.core.Plane
 import com.google.ar.core.TrackingState
 import com.simplemobiletools.camera.ar.SceneController
-import com.simplemobiletools.camera.ar.SceneState
 import com.simplemobiletools.camera.ar.arml.elements.Trackable
 import com.simplemobiletools.camera.ar.putIfAbsent
 import io.github.sceneview.ar.ARSceneView
@@ -14,8 +13,8 @@ import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import java.util.EnumMap
 
 class PlaneTrackingModule(
+	private val sceneController: SceneController,
 	private val sceneView: ARSceneView,
-	private val sceneState: SceneState
 ) : ARTrackingModule {
 
 	companion object {
@@ -108,7 +107,7 @@ class PlaneTrackingModule(
 
 			waiting.forEach { trackable ->
 				// Create AnchorNode from google.Anchor, and associate it to Anchor (trackable) adding it to the scene
-				sceneState.addToScene(trackable, anchor)
+				sceneController.addToScene(trackable, anchor)
 				Log.d(TAG, "Assigned anchor to $trackable")
 
 				trackable.sortedAssets.forEach {
@@ -116,7 +115,7 @@ class PlaneTrackingModule(
 					context.assetHandlers.getOrElse(it.arElementType) {
 						Log.w(TAG, "Got a ${it.arElementType} asset. That type is not supported yet.")
 						null
-					}?.invoke(sceneState.getAnchorNode(trackable)!!, it)
+					}?.invoke(sceneController.getAnchorNode(trackable)!!, it)
 				}
 
 				// Add RelativeTos referencing this Trackable

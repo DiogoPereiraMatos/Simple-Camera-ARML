@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.util.Log
 import com.google.ar.core.*
 import com.simplemobiletools.camera.ar.SceneController
-import com.simplemobiletools.camera.ar.SceneState
 import com.simplemobiletools.camera.ar.arml.elements.Trackable
 import com.simplemobiletools.camera.ar.arml.elements.TrackableConfig
 import com.simplemobiletools.camera.ar.putIfAbsent
@@ -12,8 +11,8 @@ import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.getUpdatedAugmentedImages
 
 class ImageTrackingModule(
+	private val sceneController: SceneController,
 	private val sceneView: ARSceneView,
-	private val sceneState: SceneState,
 	session: Session  // Only used to initialize AugmentedImageDatabase. Just to make sure we have a session...
 ) : ARTrackingModule {
 
@@ -131,7 +130,7 @@ class ImageTrackingModule(
 
 			waiting.forEach { trackable ->
 				// Create AnchorNode from google.Anchor, and associate it to Anchor (trackable) adding it to the scene
-				sceneState.addToScene(trackable, anchor)
+				sceneController.addToScene(trackable, anchor)
 				Log.d(TAG, "Assigned anchor to $trackable")
 
 				trackable.sortedAssets.forEach {
@@ -139,7 +138,7 @@ class ImageTrackingModule(
 					context.assetHandlers.getOrElse(it.arElementType) {
 						Log.w(TAG, "Got a ${it.arElementType} asset. That type is not supported yet.")
 						null
-					}?.invoke(sceneState.getAnchorNode(trackable)!!, it)
+					}?.invoke(sceneController.getAnchorNode(trackable)!!, it)
 				}
 
 				// Add RelativeTos referencing this Trackable

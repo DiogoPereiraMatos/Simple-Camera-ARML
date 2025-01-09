@@ -1,7 +1,7 @@
 package com.simplemobiletools.camera.ar.modules
 
 import com.google.ar.core.Pose
-import com.simplemobiletools.camera.ar.SceneState
+import com.simplemobiletools.camera.ar.SceneController
 import com.simplemobiletools.camera.ar.arml.elements.Condition
 import com.simplemobiletools.camera.ar.arml.elements.DistanceCondition
 import com.simplemobiletools.camera.ar.arml.elements.VisualAsset
@@ -10,8 +10,8 @@ import io.github.sceneview.ar.arcore.distanceTo
 import kotlin.math.absoluteValue
 
 class DistanceModule(
+	private val sceneController: SceneController,
 	private val sceneView: ARSceneView,
-	private val sceneState: SceneState
 ) : ARConditionModule {
 
 	companion object {
@@ -70,11 +70,11 @@ class DistanceModule(
 	override fun evaluateCondition(visualAsset: VisualAsset, condition: Condition): Boolean {
 		condition as DistanceCondition
 
-		if (!sceneState.hasAnchorNode(visualAsset))
+		if (!sceneController.hasAnchorNode(visualAsset))
 			return false
 		//TODO: Error log
 
-		val modelPose: Pose = sceneState.getAnchorNode(visualAsset)!!.anchor.pose
+		val modelPose: Pose = sceneController.getAnchorNode(visualAsset)!!.anchor.pose
 		val cameraPose = sceneView.cameraNode.pose
 
 		val distance : Float = cameraPose?.distanceTo(modelPose)?.absoluteValue ?: return false

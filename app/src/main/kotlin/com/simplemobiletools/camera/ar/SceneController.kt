@@ -85,10 +85,10 @@ class SceneController(
 				config.lightEstimationMode = Config.LightEstimationMode.ENVIRONMENTAL_HDR
 				config.instantPlacementMode = Config.InstantPlacementMode.DISABLED
 
-				selectionModule = SelectionModule(sceneView, sceneState)
-				distanceModule = DistanceModule(sceneView, sceneState)
-				planeTrackingModule = PlaneTrackingModule(sceneView, sceneState)
-				imageTrackingModule = ImageTrackingModule(sceneView, sceneState, session)
+				selectionModule = SelectionModule(this@SceneController, sceneView)
+				distanceModule = DistanceModule(this@SceneController, sceneView)
+				planeTrackingModule = PlaneTrackingModule(this@SceneController, sceneView)
+				imageTrackingModule = ImageTrackingModule(this@SceneController, sceneView, session)
 			}
 			onSessionUpdated = { session, frame ->
 				if (execute) {
@@ -229,6 +229,16 @@ class SceneController(
 
 		planeTrackingModule.addToPlaneQueue(trackable, planeType)
 	}
+
+
+
+
+	// === Scene State 'API' === //
+
+	fun addToScene(trackable: Trackable, anchor: com.google.ar.core.Anchor) = sceneState.addToScene(trackable, anchor)
+	fun getAnchorNode(anchor: Anchor): AnchorNode? = sceneState.getAnchorNode(anchor)
+	fun hasAnchorNode(visualAsset: VisualAsset): Boolean = sceneState.hasAnchorNode(visualAsset)
+	fun getAnchorNode(visualAsset: VisualAsset): AnchorNode? = sceneState.getAnchorNode(visualAsset)
 
 	fun attachModel(anchorNode: AnchorNode, model: Model) {
 		context.lifecycleScope.launch {
