@@ -33,12 +33,13 @@ class ImageTrackingModule(
 			return
 
 		sceneView.session!!.configure(
-			Config(sceneView.session).apply {
+			sceneView.session!!.config.apply {
 				augmentedImageDatabase = imageDatabase
 			}
 		)
 
 		isEnabled = true
+		Log.d(TAG, "Enabled ImageTracking.")
 	}
 
 	override fun disable() {
@@ -46,12 +47,13 @@ class ImageTrackingModule(
 			return
 
 		sceneView.session!!.configure(
-			Config(sceneView.session).apply {
+			sceneView.session!!.config.apply {
 				setAugmentedImageDatabase(null)
 			}
 		)
 
 		isEnabled = false
+		Log.d(TAG, "Disabled ImageTracking.")
 	}
 
 	override fun reset() {
@@ -59,7 +61,7 @@ class ImageTrackingModule(
 
 		imageDatabase = AugmentedImageDatabase(sceneView.session)
 		sceneView.session!!.configure(
-			Config(sceneView.session).apply {
+			sceneView.session!!.config.apply {
 				augmentedImageDatabase = imageDatabase
 			}
 		)
@@ -84,7 +86,7 @@ class ImageTrackingModule(
 		Log.d(TAG, "Added Image $path to database")
 
 		sceneView.session!!.configure(
-			Config(sceneView.session).apply {
+			sceneView.session!!.config.apply {
 				augmentedImageDatabase = imageDatabase
 			}
 		)

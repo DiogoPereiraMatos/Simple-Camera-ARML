@@ -5,7 +5,7 @@
 		<Feature id="testFeature">
 			<anchors>
 
-				<Trackable id="centreAnchor">
+				<Trackable id="testAnchor">
 					<config>
 						<tracker xlink:href="#genericHUPlaneTracker" />
 						<src>look for a plane, idk</src>
@@ -13,11 +13,17 @@
 					<assets>
 						<Model id="axisModel">
 							<href xlink:href="models/XYZ.glb" />
+							<Scale>
+								<x>0.001</x>
+								<y>0.001</y>
+								<z>0.001</z>
+							</Scale>
 						</Model>
 					</assets>
 				</Trackable>
 
 			</anchors>
 		</Feature>
+
 	</ARElements>
 </arml>

@@ -2,23 +2,7 @@ package com.simplemobiletools.camera.ar
 
 import android.util.Log
 import com.google.ar.core.Plane
-import com.simplemobiletools.camera.ar.arml.elements.ARElement
-import com.simplemobiletools.camera.ar.arml.elements.ARElementType
-import com.simplemobiletools.camera.ar.arml.elements.ARML
-import com.simplemobiletools.camera.ar.arml.elements.Anchor
-import com.simplemobiletools.camera.ar.arml.elements.Condition
-import com.simplemobiletools.camera.ar.arml.elements.DistanceCondition
-import com.simplemobiletools.camera.ar.arml.elements.Feature
-import com.simplemobiletools.camera.ar.arml.elements.Geometry
-import com.simplemobiletools.camera.ar.arml.elements.Image
-import com.simplemobiletools.camera.ar.arml.elements.Model
-import com.simplemobiletools.camera.ar.arml.elements.RelativeTo
-import com.simplemobiletools.camera.ar.arml.elements.RelativeToAble
-import com.simplemobiletools.camera.ar.arml.elements.ScreenAnchor
-import com.simplemobiletools.camera.ar.arml.elements.SelectedCondition
-import com.simplemobiletools.camera.ar.arml.elements.Trackable
-import com.simplemobiletools.camera.ar.arml.elements.TrackableConfig
-import com.simplemobiletools.camera.ar.arml.elements.VisualAsset
+import com.simplemobiletools.camera.ar.arml.elements.*
 import com.simplemobiletools.camera.ar.arml.elements.gml.LineString
 import io.github.sceneview.ar.node.AnchorNode
 import java.util.EnumMap
@@ -155,6 +139,7 @@ class SceneLoader(
 		if (!this.enabled) return
 		//Log.d(TAG, "Got Trackable $this")
 
+		//TODO: Is it really supposed to process every config?
 		this.sortedConfig.forEach {
 			trackerHandler.getOrElse(it.tracker) {
 				Log.w(TAG, "Got an unknown tracker: ${it.tracker}")

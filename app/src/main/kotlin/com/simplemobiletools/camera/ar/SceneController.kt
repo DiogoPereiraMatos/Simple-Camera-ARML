@@ -245,7 +245,7 @@ class SceneController(
 			val modelNode = sceneState.attachModel(anchorNode, model, show = model.evaluateConditions())
 
 			selectionModule.setSelected(model, false)
-			modelNode?.onDoubleTap = { selectionModule.toggleSelected(model); true }
+			modelNode?.onDoubleTap = { selectionModule.toggleSelected(model); true }  //FIXME: Only works for some?
 		}
 	}
 

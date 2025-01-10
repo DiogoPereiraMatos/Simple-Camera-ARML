@@ -33,12 +33,13 @@ class PlaneTrackingModule(
 
 		sceneView.planeRenderer.isEnabled = true
 		sceneView.session!!.configure(
-			Config(sceneView.session).apply {
+			sceneView.session!!.config.apply {
 				planeFindingMode = Config.PlaneFindingMode.HORIZONTAL_AND_VERTICAL
 			}
 		)
 
 		isEnabled = true
+		Log.d(TAG, "Enabled PlaneTracking.")
 	}
 
 	override fun disable() {
@@ -47,12 +48,13 @@ class PlaneTrackingModule(
 
 		sceneView.planeRenderer.isEnabled = false
 		sceneView.session!!.configure(
-			Config(sceneView.session).apply {
+			sceneView.session!!.config.apply {
 				planeFindingMode = Config.PlaneFindingMode.DISABLED
 			}
 		)
 
 		isEnabled = false
+		Log.d(TAG, "Disabled PlaneTracking.")
 	}
 
 	override fun reset() {
