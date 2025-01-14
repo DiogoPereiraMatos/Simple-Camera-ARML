@@ -59,6 +59,7 @@ class PlaneTrackingModule(
 
 	override fun reset() {
 		queuedAnchors.values.forEach { it.clear() }
+		Log.d(TAG, "Reset PlaneTracking.")
 	}
 
 	override fun onFrameUpdate(context: SceneController, frame: Frame) {
@@ -78,7 +79,7 @@ class PlaneTrackingModule(
 
 	fun addToPlaneQueue(trackable: Trackable, planeType: Plane.Type) {
 		queuedAnchors[planeType]!!.putIfAbsent(trackable)
-		Log.d(TAG, "Waiting for anchor (Plane) for $trackable")
+		Log.d(TAG, "Waiting for anchor (Plane) for Trackable(id=${trackable.id})")
 		return
 	}
 
@@ -110,7 +111,7 @@ class PlaneTrackingModule(
 			waiting.forEach { trackable ->
 				// Create AnchorNode from google.Anchor, and associate it to Anchor (trackable) adding it to the scene
 				sceneController.addToScene(trackable, anchor)
-				Log.d(TAG, "Assigned anchor to $trackable")
+				Log.d(TAG, "Assigned anchor to Trackable(id=${trackable.id})")
 
 				trackable.sortedAssets.forEach {
 					if (!it.enabled) return@forEach

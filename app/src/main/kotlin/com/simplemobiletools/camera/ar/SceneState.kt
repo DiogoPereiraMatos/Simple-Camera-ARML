@@ -78,6 +78,8 @@ class SceneState(
 		conditionalVisualAssets.clear()
 		visualAssetNodes.clear()
 		anchorNodes.clear()
+
+		Log.d(TAG, "Reset Scene State.")
 	}
 
 
@@ -149,7 +151,7 @@ class SceneState(
 			return
 		}
 
-		Log.d(TAG, "Showing $visualAsset")
+		Log.d(TAG, "Showing VisualAsset(id=${visualAsset.id})")
 		anchorNode.addChildNode(visualAssetNode)
 	}
 
@@ -166,7 +168,7 @@ class SceneState(
 			return
 		}
 
-		Log.d(TAG, "Hiding $visualAsset")
+		Log.d(TAG, "Hiding VisualAsset(id=${visualAsset.id})")
 		anchorNode.removeChildNode(visualAssetNode)
 	}
 
@@ -179,13 +181,13 @@ class SceneState(
 	fun addToRelativeQueue(original: Trackable, new: RelativeTo) {
 		queuedRelativeAnchors.putIfAbsent(original, ArrayList())
 		queuedRelativeAnchors[original]!!.add(new)
-		Log.d(TAG, "Waiting for anchor for $new, aka $original")
+		Log.d(TAG, "Waiting for anchor for RelativeTo(id=${new.id}), aka Trackable(id=${original.id})")
 	}
 
 	fun addToRelativeQueue(original: RelativeTo, new: RelativeTo) {
 		queuedRelativeAnchors.putIfAbsent(original, ArrayList())
 		queuedRelativeAnchors[original]!!.add(new)
-		Log.d(TAG, "Waiting for anchor for $new, aka $original")
+		Log.d(TAG, "Waiting for anchor for RelativeTo(id=${new.id}), aka RelativeTo(id=${original.id})")
 	}
 
 	fun getWaitingFor(anchor: Anchor): ArrayList<RelativeTo>? {
@@ -279,12 +281,12 @@ class SceneState(
 
 		if (visualAsset.conditions.isNotEmpty()) {
 			conditionalVisualAssets.add(visualAsset)
-			Log.d(TAG, "Added $visualAsset to conditionalVisualAssets")
+			Log.d(TAG, "Added VisualAsset(id=${visualAsset.id}) to conditionalVisualAssets")
 		}
 
 		if (show) {
 			anchorNode.addChildNode(visualAssetNode)  // equivalent to show()
-			Log.d(TAG, "Placed $visualAsset")
+			Log.d(TAG, "Placed VisualAsset(id=${visualAsset.id})")
 		}
 	}
 

@@ -101,14 +101,16 @@ class SceneLoader(
 
 	private lateinit var arml: ARML
 	fun load(arml: ARML) {
+		Log.d(TAG, "Loading ARML to Scene...")
 		this.arml = arml
-		return arml.handle()
+		arml.handle()
+		Log.d(TAG, "Loading ARML to Scene... DONE")
 	}
 
 
 
 	private fun ARML.handle() {
-		Log.d(TAG, this.toString())
+		//Log.d(TAG, this.toString())
 
 		// Process ARML
 		this.elements.forEach { it.handle() }
@@ -180,7 +182,7 @@ class SceneLoader(
 
 		if (sceneState.hasAnchorNode(this)) {
 			sceneController.addRelativeAnchorNode(relativeTo, this)
-			Log.d(TAG, "Created $relativeTo")
+			Log.d(TAG, "Created RelativeTo(id=${relativeTo.id})")
 		} else {
 			sceneState.addToRelativeQueue(this, relativeTo)
 		}
@@ -189,7 +191,7 @@ class SceneLoader(
 	private fun RelativeTo.handleRelativeTo(relativeTo: RelativeTo) {
 		if (sceneState.hasAnchorNode(this)) {
 			sceneController.addRelativeAnchorNode(relativeTo, this)
-			Log.d(TAG, "Created $relativeTo")
+			Log.d(TAG, "Created RelativeTo(id=${relativeTo.id})")
 		} else {
 			sceneState.addToRelativeQueue(this, relativeTo)
 		}

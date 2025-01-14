@@ -63,7 +63,7 @@ class SelectionModule(
 
 	fun setSelected(visualAsset: VisualAsset, selected: Boolean) {
 		isSelected[visualAsset] = selected
-		Log.d(TAG, "${if (selected) "Selected" else "Unselected" } $visualAsset")
+		Log.d(TAG, "${if (selected) "Selected" else "Unselected" } VisualAsset(id=${visualAsset.id})")
 	}
 
 	fun select(visualAsset: VisualAsset) {

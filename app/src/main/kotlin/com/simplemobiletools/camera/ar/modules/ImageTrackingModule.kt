@@ -65,6 +65,7 @@ class ImageTrackingModule(
 				augmentedImageDatabase = imageDatabase
 			}
 		)
+		Log.d(TAG, "Reset ImageTracking.")
 	}
 
 	override fun onFrameUpdate(context: SceneController, frame: Frame) {
@@ -99,7 +100,7 @@ class ImageTrackingModule(
 	fun addToImageQueue(trackable: Trackable, config: TrackableConfig) {
 		queuedImages.putIfAbsent(config.src, ArrayList())
 		queuedImages[config.src]!!.putIfAbsent(trackable)
-		Log.d(TAG, "Waiting for anchor (Image; src=${config.src}) for $trackable")
+		Log.d(TAG, "Waiting for anchor (Image; src=${config.src}) for Trackable(id=${trackable.id})")
 		return
 	}
 
@@ -133,7 +134,7 @@ class ImageTrackingModule(
 			waiting.forEach { trackable ->
 				// Create AnchorNode from google.Anchor, and associate it to Anchor (trackable) adding it to the scene
 				sceneController.addToScene(trackable, anchor)
-				Log.d(TAG, "Assigned anchor to $trackable")
+				Log.d(TAG, "Assigned anchor to Trackable(id=${trackable.id})")
 
 				trackable.sortedAssets.forEach {
 					if (!it.enabled) return@forEach
