@@ -7,11 +7,12 @@ import org.simpleframework.xml.ElementListUnion
 
 abstract class VisualAsset : ARElement {
 	var enabled: Boolean = true
-	var zOrder: Int? = null
+	var zOrder: Int = 0
 	val conditions: ArrayList<Condition> = ArrayList()
 	var orientation: Orientation? = null
 	var scalingMode: ScalingMode? = null
 
+	//FIXME: Should be Roll-Tilt-Heading, no? As in roll-pitch-yaw?
 	val rotationVector: Float3
 		get() = Float3(
 			orientation?.tilt?.toFloat() ?: 0f,
@@ -43,7 +44,7 @@ abstract class VisualAsset : ARElement {
 
 	internal constructor(root: ARML, base: LowLevelVisualAsset) : super(base) {
 		this.enabled = base.enabled ?: true
-		this.zOrder = base.zOrder
+		this.zOrder = base.zOrder ?: 0
 		this.orientation = base.orientation?.let { Orientation(root, it) }
 		this.scalingMode = base.scalingMode?.let { ScalingMode(root, it) }
 

@@ -2,13 +2,14 @@ package com.simplemobiletools.camera.ar
 
 import android.graphics.BitmapFactory
 import android.util.Log
-import com.simplemobiletools.camera.activities.SceneviewActivity
 import com.simplemobiletools.camera.ar.arml.elements.*
 import com.simplemobiletools.camera.ar.arml.elements.gml.Point
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.node.AnchorNode
+import io.github.sceneview.math.Direction
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
+import io.github.sceneview.math.Size
 import io.github.sceneview.model.setBlendOrder
 import io.github.sceneview.model.setGlobalBlendOrderEnabled
 import io.github.sceneview.node.ImageNode
@@ -16,7 +17,6 @@ import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
 
 class SceneState(
-	private val context: SceneviewActivity,
 	private val sceneView: ARSceneView
 ) {
 	/*
@@ -209,7 +209,18 @@ class SceneState(
 
 
 	fun addToScene(trackable: Trackable, anchor: com.google.ar.core.Anchor) {
-		val anchorNode = AnchorNode(sceneView.engine, anchor)
+		val anchorNode = AnchorNode(sceneView.engine, anchor).apply {
+			transform(
+				position = Position(0f, 0f, 0f),
+				rotation = Rotation(0f, 0f, 0f),
+				scale = Size(1f, 1f, 1f)
+			)
+		}
+		setAnchorNode(trackable, anchorNode)
+		sceneView.addChildNode(anchorNode)
+	}
+
+	fun addToScene(trackable: Trackable, anchorNode: AnchorNode) {
 		setAnchorNode(trackable, anchorNode)
 		sceneView.addChildNode(anchorNode)
 	}
@@ -220,23 +231,37 @@ class SceneState(
 
 		modelInstance.apply {
 			//setPriority(7)
-			setBlendOrder(model.zOrder ?: 0)
+			setBlendOrder(model.zOrder)
 			setGlobalBlendOrderEnabled(true)
 		}
 
+		// From -180->180 to 0->360
+		val x = if (model.rotationVector.x < 0f) 360f + model.rotationVector.x else model.rotationVector.x
+		val y = if (model.rotationVector.y < 0f) 360f + model.rotationVector.y else model.rotationVector.y
+		val z = if (model.rotationVector.z < 0f) 360f + model.rotationVector.z else model.rotationVector.z
+		val rotation = Rotation(x, y, z)
+		Log.d(TAG, "TEST: rotation=$rotation")
+
 		val modelNode = ModelNode(
-			modelInstance = modelInstance
+			modelInstance = modelInstance,
+			//FIXME: Doesn't appear to be doing anything. Probably overwritten by transform scale
+			scaleToUnits = 1f,
+			//FIXME: Feel free to change this
+			// (I have a feeling that it doesn't change anything)
+			// (also, it's better for some models to be on the base, but for some, like the test axis, it should keep the original center)
+			centerOrigin = null //Position(0f, -1f, 0f),
 		).apply {
 			isEditable = true
 
-			//FIXME: Axis are not working
 			transform(
-				rotation = Rotation(model.rotationVector + Rotation(180f, 180f, 180f)),
+				position = Position(0f, 0f, 0f),
+				//FIXME: Rotation order: Z, Y, X. Want X-Y-Z, I think...
+				rotation = rotation,
 				scale = model.scaleVector
 			)
 
 			//setPriority(7)
-			setBlendOrder(model.zOrder ?: 0)
+			setBlendOrder(model.zOrder)
 			setGlobalBlendOrderEnabled(true)
 		}
 
@@ -254,14 +279,53 @@ class SceneState(
 		//TODO: Fetch remote image
 		val bitmap = BitmapFactory.decodeStream(projectAssets.open(image.href)) ?: return null
 
+		var imageWidth = 1f
+		var imageHeight = 1f
+
+		if (image.width is SizePercentage || image.height is SizePercentage) {
+			//TODO: percentages
+			//Keep default
+		} else if (image.width == null && image.height == null) {
+			//TODO: Find size of tracked surface
+			//Keep default
+		}
+		else if (image.width == null) {
+			imageHeight = (image.height!! as SizeAbsolute).m
+			imageWidth = imageHeight * (bitmap.width.toFloat() / bitmap.height.toFloat())
+		}
+		else if (image.height == null) {
+			imageWidth = (image.width!! as SizeAbsolute).m
+			imageHeight = imageWidth * (bitmap.height.toFloat() / bitmap.width.toFloat())
+		}
+		else {
+			imageWidth = (image.width!! as SizeAbsolute).m
+			imageHeight = (image.height!! as SizeAbsolute).m
+		}
+
+		val size: Size = Size(imageWidth, imageHeight)
+		Log.d(TAG, "TEST: width=${image.width}, height=${image.height}")
+		Log.d(TAG, "TEST: bitmapWidth=${bitmap.width}, bitmapHeight=${bitmap.height}")
+		Log.d(TAG, "TEST: size=$size")
+
+		// From -180->180 to 0->360
+		val x = if (image.rotationVector.x < 0f) 360f + image.rotationVector.x else image.rotationVector.x
+		val y = if (image.rotationVector.y < 0f) 360f + image.rotationVector.y else image.rotationVector.y
+		val z = if (image.rotationVector.z < 0f) 360f + image.rotationVector.z else image.rotationVector.z
+		val rotation = Rotation(x, y, z)
+		Log.d(TAG, "TEST: rotation=$rotation")
+
 		val imageNode = ImageNode(
 			materialLoader = sceneView.materialLoader,
-			bitmap = bitmap
-			//normal = Direction(0f)  //TODO: Consider OrientationMode
+			bitmap = bitmap,
+			size = size,
+			normal = Direction(0f),
+			//center = Position(0f, 0f, 0f)
 		).apply {
-			//FIXME: Once again, axis are not working
 			transform(
-				rotation = Rotation(image.rotationVector) + Rotation(180f, 180f, 180f)
+				position = Position(0f, 0f, 0f),
+				//FIXME: Rotation order: Z, Y, X. Want X-Y-Z, I think...
+				rotation = rotation,
+				scale = Size(1f, 1f, 1f)
 			)
 		}
 
@@ -297,22 +361,34 @@ class SceneState(
 	fun addRelativeAnchorNode(relativeTo: RelativeTo, other: AnchorNode): AnchorNode {
 		val newPos = relativeTo.geometry.let {
 			when(it) {
-				is Point -> it.relativeTo(other)
+				is Point -> it.asVec3
 				else -> Position(0f,0f,0f)
 			}
 		}
+
+		Log.d(TAG, "TEST: newPos=$newPos")
 
 		val newAnchorNode = AnchorNode(sceneView.engine, other.anchor).apply {
 			isEditable = true
 			other.addChildNode(this)
 
-			//FIXME: Axis still don't work
 			transform(
-				position = newPos
+				position = newPos,
+				rotation = Rotation(0f, 0f, 0f),
+				scale = Size(1f, 1f, 1f)
 			)
 		}
 		setAnchorNode(relativeTo, newAnchorNode)
 
 		return newAnchorNode
+	}
+
+	//TODO
+	fun addRelativeAnchorNodeToUser(relativeTo: RelativeTo): Node {
+		val userAnchorNode = sceneView.cameraNode
+
+		val node = Node(userAnchorNode.engine)
+		userAnchorNode.addChildNode(node)
+		return node
 	}
 }

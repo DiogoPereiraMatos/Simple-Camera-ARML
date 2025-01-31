@@ -20,6 +20,11 @@ class Trackable : ARAnchor {
 
 	override fun validate(): Pair<Boolean, String> {
 		super.validate().let { if (!it.first) return it }
+		if (config.size < 1)
+			return Pair(
+				false,
+				"Trackable must have at least one config: $this"
+			)
 		config.forEach { config -> config.validate().let { if (!it.first) return it } }
 		return SUCCESS
 	}
@@ -34,6 +39,21 @@ class Trackable : ARAnchor {
 		this.config.replaceAllWith(base.config.map { TrackableConfig(root, it) })
 	}
 }
+
+
+@Root(name = "Trackable", strict = true)
+internal class LowLevelTrackable : LowLevelARAnchor() {
+
+	@field:ElementList(name = "config", required = true, inline = true)
+	lateinit var config: List<LowLevelTrackableConfig>
+
+	@field:Element(name = "size", required = false)
+	var size: Double? = null
+}
+
+
+
+
 
 class TrackableConfig {
 	var tracker: String
@@ -62,16 +82,6 @@ class TrackableConfig {
 }
 
 
-@Root(name = "Trackable", strict = true)
-internal class LowLevelTrackable : LowLevelARAnchor() {
-
-	@field:ElementList(name = "config", required = true, inline = true)
-	lateinit var config: List<LowLevelTrackableConfig>
-
-	@field:Element(name = "size", required = false)
-	var size: Double? = null
-}
-
 @Root(name = "config", strict = true)
 internal class LowLevelTrackableConfig {
 
@@ -94,4 +104,63 @@ internal class LowLevelTrackableConfig {
 
 	@field:Attribute(name = "order", required = false)
 	var order: Int? = null
+}
+
+
+
+
+
+class Tracker : ARElement {
+	override val arElementType = ARElementType.TRACKER
+
+	var uri: String
+	var src: String? = null
+
+	constructor(uri: String) : super() {
+		this.uri = uri
+	}
+
+	constructor(other: Tracker) : super(other) {
+		this.uri = other.uri
+		this.src = other.src
+	}
+
+	override val elementsById: HashMap<String, ARElement> = HashMap()
+
+	override fun validate(): Pair<Boolean, String> = SUCCESS
+
+	override fun toString(): String {
+		return "Tracker(id=\"$id\",uri=\"$uri\",src=\"$src\")"
+	}
+
+
+	internal constructor(root: ARML, base: LowLevelTracker) : super(base) {
+		this.uri = base.uri.href
+		this.src = base.src?.href
+	}
+}
+
+
+@Root(name = "Tracker", strict = true)
+internal class LowLevelTracker : LowLevelARElement() {
+
+	@field:Element(name = "uri", required = true)
+	lateinit var uri: URI
+
+	@Root(name = "uri", strict = true)
+	class URI {
+		@Namespace(reference = "http://www.w3.org/1999/xlink", prefix = "xlink")
+		@field:Attribute(name = "href", required = true)
+		lateinit var href: String
+	}
+
+	@field:Element(name = "src", required = false)
+	var src: SRC? = null
+
+	@Root(name = "src", strict = true)
+	class SRC {
+		@Namespace(reference = "http://www.w3.org/1999/xlink", prefix = "xlink")
+		@field:Attribute(name = "href", required = true)
+		lateinit var href: String
+	}
 }

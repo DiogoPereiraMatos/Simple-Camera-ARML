@@ -82,7 +82,7 @@ class SelectionModule(
 	override fun evaluateCondition(visualAsset: VisualAsset, condition: Condition): Boolean {
 		condition as SelectedCondition
 
-		//TODO: Consider listener property (since gesture detection is not even working, i'll ignore this)
+		//TODO: Consider listener property
 		return isSelected(visualAsset) == condition.selected
 	}
 }

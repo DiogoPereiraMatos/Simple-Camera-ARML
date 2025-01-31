@@ -38,6 +38,12 @@ class Label : VisualAsset2D {
 	override fun validate(): Pair<Boolean, String> {
 		super.validate().let { if (!it.first) return it }
 
+		if (href == null && src == null)
+			return Pair(
+				false,
+				"At least one of \"href\" and \"src\" must be set on $this."
+			)
+
 		if (viewportWidth <= 0)
 			return Pair(
 				false,

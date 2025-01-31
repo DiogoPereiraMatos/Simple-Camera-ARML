@@ -2,21 +2,21 @@
 <arml xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">
 	<ARElements>
 
-		<Feature id="testFeature">
+		<Feature id="animatedFeature">
 			<anchors>
 
-				<Trackable id="testAnchor">
+				<Trackable id="centreAnchor">
 					<config>
 						<tracker xlink:href="#genericHUPlaneTracker" />
 						<src>look for a plane, idk</src>
 					</config>
 					<assets>
-						<Model id="axisModel">
-							<href xlink:href="models/XYZ.glb" />
+						<Model id="animatedModel">
+							<href xlink:href="models/misc/halloween.glb" />
 							<Scale>
-								<x>0.001</x>
-								<y>0.001</y>
-								<z>0.001</z>
+								<x>0.5</x>
+								<y>0.5</y>
+								<z>0.5</z>
 							</Scale>
 						</Model>
 					</assets>
@@ -24,6 +24,5 @@
 
 			</anchors>
 		</Feature>
-
 	</ARElements>
 </arml>

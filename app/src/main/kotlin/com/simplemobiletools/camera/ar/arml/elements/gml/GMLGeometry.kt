@@ -6,8 +6,8 @@ import org.simpleframework.xml.Attribute
 
 abstract class GMLGeometry {
 	var id: String
-	var srsName: String? = null
-	var srsDimention: Int? = null
+	var srsName: String = "WGS84"
+	var srsDimension: Int = 2
 
 	constructor(id: String) {
 		this.id = id
@@ -15,27 +15,27 @@ abstract class GMLGeometry {
 
 	constructor(other: GMLGeometry) : this(other.id) {
 		this.srsName = other.srsName
-		this.srsDimention = other.srsDimention
+		this.srsDimension = other.srsDimension
 	}
 
 	open fun validate(): Pair<Boolean, String> {
-		if (srsDimention != null && srsDimention!! <= 0) {
+		if (srsDimension <= 0) {
 			return Pair(
 				false,
-				"srsDimention must be positive."
+				"srsDimension must be positive."
 			)
 		}
 		return SUCCESS
 	}
 
 	override fun toString(): String {
-		return "${this::class.simpleName}(gml:id=$id)"
+		return "${this::class.simpleName}(id=\"$id\",srsName=\"$srsName\",srsDimension=$srsDimension)"
 	}
 
 
 	internal constructor(root: ARML, base: LowLevelGMLGeometry) : this(base.id) {
-		this.srsName = null
-		this.srsDimention = null
+		this.srsName = base.srsName ?: this.srsName
+		this.srsDimension = base.srsDimension ?: this.srsDimension
 	}
 }
 
@@ -45,4 +45,10 @@ internal abstract class LowLevelGMLGeometry {
 	//@Namespace(reference = "http://www.opengis.net/gml/3.2", prefix = "gml")
 	@field:Attribute(name = "id", required = true)
 	lateinit var id: String
+
+	@field:Attribute(name = "srsName", required = false)
+	var srsName: String? = null
+
+	@field:Attribute(name = "srsDimension", required = false)
+	var srsDimension: Int? = null
 }

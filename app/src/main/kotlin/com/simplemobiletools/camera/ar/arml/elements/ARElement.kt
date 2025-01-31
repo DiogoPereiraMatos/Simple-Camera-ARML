@@ -35,7 +35,10 @@ abstract class ARElement {
 
 
 	internal constructor(base: LowLevelARElement) : this() {
-		this.id = base.id ?: this.id
+		this.id = when (val id = base.id) {
+			"user", null -> this.id
+			else -> id
+		}
 	}
 }
 

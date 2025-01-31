@@ -12,9 +12,13 @@ enum class OrientationMode {
 	}
 }
 
+abstract class Size
+class SizeAbsolute(val m: Float) : Size()
+class SizePercentage(val p: Float) : Size()
+
 abstract class VisualAsset2D : VisualAsset {
-	var width: String? = null
-	var height: String? = null
+	var width: Size? = null
+	var height: Size? = null
 	var orientationMode: OrientationMode? = null
 	var backside: String? = null
 
@@ -27,15 +31,41 @@ abstract class VisualAsset2D : VisualAsset {
 		this.backside = other.backside
 	}
 
+	override fun validate(): Pair<Boolean, String> {
+		super.validate().let { if (!it.first) return it }
+		this.width?.let { when (it) {
+			is SizePercentage -> if (it.p <= 0) return Pair(false, "Invalid width percentage: ${it.p}")
+			is SizeAbsolute -> if (it.m <= 0) return Pair(false, "Invalid width absolute: ${it.m}")
+		} }
+		this.height?.let { when (it) {
+			is SizePercentage -> if (it.p <= 0) return Pair(false, "Invalid height percentage: ${it.p}")
+			is SizeAbsolute -> if (it.m <= 0) return Pair(false, "Invalid height absolute: ${it.m}")
+		} }
+		return SUCCESS
+	}
+
 	override fun toString(): String {
 		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions,width=\"$width\",height=\"$height\",orientationMode=\"$orientationMode\",backside=\"$backside\")"
 	}
 
 
 	internal constructor(root: ARML, base: LowLevelVisualAsset2D) : super(root, base) {
-		this.width = base.width
-		this.height = base.height
 		this.backside = base.backside
+
+		this.width = base.width?.let {
+			if (it.matches(Regex(".+%")))
+				SizePercentage(it.removeSuffix("%").toFloat())
+			else
+				SizeAbsolute(it.toFloat())
+		}
+
+		this.height = base.height?.let {
+			if (it.matches(Regex(".+%"))) {
+				SizePercentage(it.removeSuffix("%").toFloat())
+			} else
+				SizeAbsolute(it.toFloat())
+		}
+
 
 		if (base.orientationMode != null) {
 			try {

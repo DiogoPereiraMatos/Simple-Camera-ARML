@@ -1,0 +1,44 @@
+
+<arml xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<ARElements>
+		
+		<Model id="axisModel">
+			<href xlink:href="models/misc/XYZ.glb" />
+			<Scale>
+				<x>0.001</x>
+				<y>0.001</y>
+				<z>0.001</z>
+			</Scale>
+			<Orientation>
+				<roll>90</roll>
+			</Orientation>
+		</Model>
+
+		<Feature id="testFeature">
+			<anchors>
+
+				<Trackable id="planeAnchor">
+					<config>
+						<tracker xlink:href="#genericHUPlaneTracker" />
+						<src>look for a plane, idk</src>
+					</config>
+					<assets>
+						<assetRef xlink:href="axisModel" />
+						<Image>
+							<href xlink:href="good_images/tate.jpg" />
+							<Orientation>
+								<tilt>90</tilt>
+								<roll>90</roll>
+								<heading>90</heading>
+							</Orientation>
+							<height>1</height>
+							<width>0.5</width>
+						</Image>
+					</assets>
+				</Trackable>
+
+			</anchors>
+		</Feature>
+
+	</ARElements>
+</arml>

@@ -116,13 +116,13 @@ class PlaneTrackingModule(
 				trackable.sortedAssets.forEach {
 					if (!it.enabled) return@forEach
 					context.assetHandlers.getOrElse(it.arElementType) {
-						Log.w(TAG, "Got a ${it.arElementType} asset. That type is not supported yet.")
+						Log.w(TAG, "Got a ${it.arElementType} asset. That type is not supported yet. Ignoring...")
 						null
 					}?.invoke(sceneController.getAnchorNode(trackable)!!, it)
 				}
 
 				// Add RelativeTos referencing this Trackable
-				context.copyAnchorNode(trackable)
+				context.propagateAnchorNode(trackable)
 			}
 
 			// All processed. Clear queue

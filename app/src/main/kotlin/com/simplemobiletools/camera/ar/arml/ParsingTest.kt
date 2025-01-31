@@ -15,13 +15,82 @@ class ParsingTest {
 			.also { println("Init: ${it.duration} ms") }
 			.value
 	}
+
+
+	@Test
+	fun misc_metadata() {
+		val str = """
+			<Feature $HEADER>
+				<metadata>
+					str1
+					<test>elem1</test>
+					str2
+					<test>elem2</test>
+					str3
+					<ping>pong</ping>
+				</metadata>
+			</Feature>
+		"""
+			.trimIndent()
+
+		val arml = ARML()
+
+		val load = measureTimedValue { parser.loads(str, LowLevelFeature::class.java) }
+		val obj = Feature(arml, load.value)
+		val validate = measureTimedValue { obj.validate() }
+		val result = validate.value
+		println("load: ${load.duration.inWholeMilliseconds} ms; validate: ${validate.duration.inWholeMilliseconds} ms")
+
+		assert(result.first) {
+			AssertionError(result.second)
+		}
+		println("OK")
+		println(obj)
+
+		//Will fail!
+		assert(obj.metadata.toString() == """
+			str1
+			<test>elem1</test>
+			str2
+			<test>elem2</test>
+			str3
+			<ping>pong</ping>
+		""".trimIndent())
+	}
+
+
+	@Test
+	fun misc_user_id() {
+		val str = """
+			<Feature id="user" $HEADER>
+			</Feature>
+		"""
+			.trimIndent()
+
+		val arml = ARML()
+
+		val load = measureTimedValue { parser.loads(str, LowLevelFeature::class.java) }
+		val obj = Feature(arml, load.value)
+		val validate = measureTimedValue { obj.validate() }
+		val result = validate.value
+		println("load: ${load.duration.inWholeMilliseconds} ms; validate: ${validate.duration.inWholeMilliseconds} ms")
+
+		assert(result.first) {
+			AssertionError(result.second)
+		}
+		println("OK")
+		println(obj)
+
+		assert(obj.id != "user") {
+			AssertionError("ID is user")
+		}
+	}
 	
 
 	@Test
 	fun simple_xml_arml_1() {
 		val str = """
-			<arml xmlns="http://www.opengis.net/arml/2.0" 
-				xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"> 
+			<arml $HEADER> 
 				<ARElements>
 				</ARElements>
 			</arml>
@@ -135,6 +204,9 @@ class ParsingTest {
 		}
 		val myAnchor = Trackable().apply {
 			id = "#myAnchor"
+			config.add(
+				TrackableConfig("#placeholder_tracker", "placeholder_src")
+			)
 		}
 		val expected = Feature().apply {
 			id = "ferrisWheel"
@@ -145,9 +217,7 @@ class ParsingTest {
 				"64,75"
 			))
 			anchors.add(Geometry(
-				Point(id = "applePosition", srsDimension = 2).apply {
-					pos.replaceAllWith(listOf(1f, 2f))
-				}
+				Point(id = "applePosition", pos = listOf(1.0, 2.0))
 			).apply {
 				id = "myGeometry"
 				assets.replaceAllWith(listOf(
@@ -272,10 +342,16 @@ class ParsingTest {
 	@Test
 	fun simple_xml_linestring() {
 		val str = """
-			<gml:LineString id="myLineString" $HEADER>
+			<gml:LineString id="myLineString" srsDimension="4" $HEADER>
 				<gml:posList>
 					47.48 13.14 48.49 14.15
 				</gml:posList>
+				<gml:Point id="applePosition">
+					<gml:pos>1 2</gml:pos>
+				</gml:Point>
+				<gml:Point id="applePosition">
+					<gml:pos>1 2</gml:pos>
+				</gml:Point>
 			</gml:LineString>
 		"""
 			.trimIndent()
@@ -298,26 +374,20 @@ class ParsingTest {
 		val str = """
 			<gml:Polygon id="myPolygon" $HEADER>
 				<gml:exterior>
-					<gml:LinearRing id="exteriorLinearRing">
-						<gml:posList>
-							47.48 13.14 48.49 14.15 48.49 14.13 47.48 13.14
-						</gml:posList>
-					</gml:LinearRing>
+					<gml:posList>
+						47.48 13.14 48.49 14.15 48.49 14.13 47.48 13.14
+					</gml:posList>
 				</gml:exterior>
-				<gml:interior>
-					<gml:LinearRing id="interiorLinearRing1">
-						<gml:posList>
-							48.00 14.00 48.01 14.01 48.01 13.99 48.00 14.00
-						</gml:posList>
-					</gml:LinearRing>
-				</gml:interior>
-				<gml:interior>
-					<gml:LinearRing id="interiorLinearRing2">
-						<gml:posList>
-							48.00 14.00 48.01 14.01 48.01 13.99 48.00 14.00
-						</gml:posList>
-					</gml:LinearRing>
-				</gml:interior> 
+				<gml:LinearRing>
+					<gml:posList>
+						48.00 14.00 48.01 14.01 48.01 13.99 48.00 14.00
+					</gml:posList>
+				</gml:LinearRing>
+				<gml:LinearRing>
+					<gml:posList>
+						48.00 14.00 48.01 14.01 48.01 13.99 48.00 14.00
+					</gml:posList>
+				</gml:LinearRing>
 			</gml:Polygon>
 		"""
 			.trimIndent()
@@ -577,6 +647,12 @@ class ParsingTest {
 					<gml:posList dimension="3"> <!-- will describe the outline of the square marker (2.5 meters from origin to top, bottom, left and right edge -->
 						2.5 2.5 0 2.5 -2.5 0 -2.5 -2.5 0 -2.5 2.5 0 2.5 2.5 0
 					</gml:posList>
+					<gml:Point id="applePosition">
+						<gml:pos>1 2</gml:pos>
+					</gml:Point>
+					<gml:Point id="applePosition">
+						<gml:pos>1 2</gml:pos>
+					</gml:Point>
 				</gml:LineString>
 				<assets>
 					<assetRef xlink:href="#appleModel" />

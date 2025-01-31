@@ -1,0 +1,187 @@
+
+<arml xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<ARElements>
+		
+		<Model id="axisModel">
+			<href xlink:href="models/misc/XYZ.glb" />
+			<Scale>
+				<x>0.005</x>
+				<y>0.005</y>
+				<z>0.005</z>
+			</Scale>
+			<Orientation>
+				<roll>90</roll>
+			</Orientation>
+		</Model>
+
+		<Feature id="testFeature">
+			<anchors>
+
+				<!-- Plane -->
+				<Trackable id="planeAnchor">
+					<config>
+						<tracker xlink:href="#genericHUPlaneTracker" />
+						<src>look for a plane, idk</src>
+					</config>
+					<assets>
+					</assets>
+				</Trackable>
+
+				<!-- Center (0.5 above plane, i.e. Y+0.5) -->
+				<RelativeTo id="centerAnchor">
+					<ref xlink:href="planeAnchor" />
+					<gml:Point id="centerOffset" srsDimension="3">
+						<gml:pos>
+							0 0.5 0
+						</gml:pos>
+					</gml:Point>
+					<assets>
+					</assets>
+				</RelativeTo>
+
+				<!-- Axis -->
+				<RelativeTo id="axisAnchor">
+					<enabled>false</enabled>
+					<ref xlink:href="centerAnchor" />
+					<gml:Point id="axisOffset" srsDimension="3">
+						<gml:pos>
+							<!--
+								0.25 - 0.005 * x = 0
+								x = 50
+							-->
+							0 0 0.25
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<assetRef xlink:href="axisModel" />
+					</assets>
+				</RelativeTo>
+
+				<!-- Front: +Z -->
+				<RelativeTo id="pzAnchor">
+					<enabled>true</enabled>
+					<ref xlink:href="centerAnchor" />
+					<gml:Point id="pz" srsDimension="3">
+						<gml:pos>
+							0 0 0.125
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Image>
+							<href xlink:href="good_images/tate.jpg" />
+							<height>0.25</height>
+							<width>0.25</width>
+						</Image>
+					</assets>
+				</RelativeTo>
+
+				<!-- Right: +X -->
+				<RelativeTo id="pxAnchor">
+					<enabled>true</enabled>
+					<ref xlink:href="centerAnchor" />
+					<gml:Point id="px" srsDimension="3">
+						<gml:pos>
+							0.125 0 0
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Image>
+							<href xlink:href="good_images/tate.jpg" />
+							<Orientation>
+								<roll>90</roll>
+							</Orientation>
+							<height>0.25</height>
+							<width>0.25</width>
+						</Image>
+					</assets>
+				</RelativeTo>
+
+				<!-- Back: -Z -->
+				<RelativeTo id="nzAnchor">
+					<enabled>true</enabled>
+					<ref xlink:href="centerAnchor" />
+					<gml:Point id="nz" srsDimension="3">
+						<gml:pos>
+							0 0 -0.125
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Image>
+							<href xlink:href="good_images/tate.jpg" />
+							<Orientation>
+								<roll>180</roll>
+							</Orientation>
+							<height>0.25</height>
+							<width>0.25</width>
+						</Image>
+					</assets>
+				</RelativeTo>
+
+				<!-- Left: -X -->
+				<RelativeTo id="nxAnchor">
+					<enabled>true</enabled>
+					<ref xlink:href="centerAnchor" />
+					<gml:Point id="nx" srsDimension="3">
+						<gml:pos>
+							-0.125 0 0
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Image>
+							<href xlink:href="good_images/tate.jpg" />
+							<Orientation>
+								<roll>-90</roll>
+							</Orientation>
+							<height>0.25</height>
+							<width>0.25</width>
+						</Image>
+					</assets>
+				</RelativeTo>
+
+				<!-- Bottom: -Y -->
+				<RelativeTo id="nyAnchor">
+					<enabled>true</enabled>
+					<ref xlink:href="centerAnchor" />
+					<gml:Point id="ny" srsDimension="3">
+						<gml:pos>
+							0 -0.125 0
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Image>
+							<href xlink:href="good_images/tate.jpg" />
+							<Orientation>
+								<tilt>90</tilt>
+							</Orientation>
+							<height>0.25</height>
+							<width>0.25</width>
+						</Image>
+					</assets>
+				</RelativeTo>
+
+				<!-- Top: +Y -->
+				<RelativeTo id="pyAnchor">
+					<enabled>true</enabled>
+					<ref xlink:href="centerAnchor" />
+					<gml:Point id="py" srsDimension="3">
+						<gml:pos>
+							0 0.125 0
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Image>
+							<href xlink:href="good_images/tate.jpg" />
+							<Orientation>
+								<tilt>-90</tilt>
+							</Orientation>
+							<height>0.25</height>
+							<width>0.25</width>
+						</Image>
+					</assets>
+				</RelativeTo>
+
+			</anchors>
+		</Feature>
+
+	</ARElements>
+</arml>

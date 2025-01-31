@@ -37,7 +37,7 @@ class SceneController(
 	private lateinit var planeTrackingModule: PlaneTrackingModule
 	private lateinit var imageTrackingModule: ImageTrackingModule
 
-	private val sceneState: SceneState = SceneState(context, sceneView)
+	private val sceneState: SceneState = SceneState(sceneView)
 	private val sceneLoader : SceneLoader = SceneLoader(this, sceneState)
 	val trackerHandler = sceneLoader.trackerHandler
 	val arElementHandlers = sceneLoader.arElementHandlers
@@ -215,11 +215,12 @@ class SceneController(
 
 
 
+	//=== Module Stuff ===/
 
 	private fun VisualAsset.evaluateConditions(): Boolean {
 		this.conditions.forEach {
 			val result = conditionHandlers.getOrElse(it.arElementType) {
-				Log.w(TAG, "Got a ${it.arElementType} condition. That type has not been implemented yet.")
+				Log.w(TAG, "Got a ${it.arElementType} condition. That type has not been implemented yet. Ignoring...")
 				null
 			}?.invoke(this, it) ?: true
 
@@ -236,7 +237,7 @@ class SceneController(
 
 		//TODO: Fetch remote
 		val bitmap = BitmapFactory.decodeStream(context.assets.open(config.src))
-		imageTrackingModule.addImageToDatabase(config.src, bitmap)
+		imageTrackingModule.addImageToDatabase(config.src, bitmap, trackable.size)
 		imageTrackingModule.addToImageQueue(trackable, config)
 	}
 
@@ -259,6 +260,8 @@ class SceneController(
 	fun hasAnchorNode(visualAsset: VisualAsset): Boolean = sceneState.hasAnchorNode(visualAsset)
 	fun getAnchorNode(visualAsset: VisualAsset): AnchorNode? = sceneState.getAnchorNode(visualAsset)
 
+	//== Asset stuff: ==/
+
 	fun attachModel(anchorNode: AnchorNode, model: Model) {
 		context.lifecycleScope.launch {
 			val modelNode = sceneState.attachModel(anchorNode, model, show = model.evaluateConditions())
@@ -277,6 +280,21 @@ class SceneController(
 		//}
 	}
 
+	//== RelativeTo Stuff: ==/
+
+	//TODO
+	fun addRelativeAnchorNodeToUser(relativeTo: RelativeTo) {
+		val newNode = sceneState.addRelativeAnchorNodeToUser(relativeTo)
+
+		/*
+		relativeTo.assets.forEach {
+			assetHandlers.getOrElse(it.arElementType) {
+				Log.w(TAG, "Got a ${it.arElementType} asset. That type is not supported yet. Ignoring...")
+				null
+			}?.invoke(newNode, it)
+		}
+		 */
+	}
 
 	fun addRelativeAnchorNode(relativeTo: RelativeTo, other: Trackable) {
 		sceneState.getAnchorNode(other)?.let { this.addRelativeAnchorNode(relativeTo, it) }
@@ -291,22 +309,22 @@ class SceneController(
 
 		relativeTo.assets.forEach {
 			assetHandlers.getOrElse(it.arElementType) {
-				Log.w(TAG, "Got a ${it.arElementType} asset. That type is not supported yet.")
+				Log.w(TAG, "Got a ${it.arElementType} asset. That type is not supported yet. Ignoring...")
 				null
 			}?.invoke(newAnchorNode, it)
 		}
 	}
 
-	fun copyAnchorNode(original: Anchor) {
+	fun propagateAnchorNode(original: Anchor) {
 		if (sceneState.isAwaited(original)) {
 			val originalAnchorNode = sceneState.getAnchorNode(original)!!
 
 			sceneState.getWaitingFor(original)!!.forEach { new ->
 				addRelativeAnchorNode(new, originalAnchorNode)
-				Log.d(TAG, "Assigned anchor to RelativeTo(id=$new)")
+				Log.d(TAG, "Assigned anchor to RelativeTo(id=${new.id})")
 
-				// Call recursively
-				copyAnchorNode(new)
+				// Call recursively for RelativeTo relative to RelativeTo :)
+				propagateAnchorNode(new)
 			}
 
 			sceneState.clearQueuedRelativeAnchors(original)

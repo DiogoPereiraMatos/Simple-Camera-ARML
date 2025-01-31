@@ -39,18 +39,21 @@ class SceneLoader(
 
 	val arElementHandlers : EnumMap<ARElementType, (ARElement) -> Unit> = EnumMap(
 		mapOf<ARElementType, (ARElement) -> Unit>(
-			Pair(ARElementType.FEATURE)      { it as Feature; it.handle() },
-			Pair(ARElementType.TRACKABLE)    { it as Anchor;  it.handle() },
-			Pair(ARElementType.RELATIVETO)   { it as Anchor;  it.handle() },
-			Pair(ARElementType.SCREENANCHOR) { it as Anchor;  it.handle() },
-			Pair(ARElementType.GEOMETRY)     { it as Anchor;  it.handle() },
+			Pair(ARElementType.FEATURE)      { it as Feature; if (it.enabled) it.handle() },
+
+			// Anchors:
+			// Just calls the relevant handler from anchorHandlers
+			Pair(ARElementType.TRACKABLE)    { it as Anchor;  if (it.enabled) it.handle() },
+			Pair(ARElementType.RELATIVETO)   { it as Anchor;  if (it.enabled) it.handle() },
+			Pair(ARElementType.SCREENANCHOR) { it as Anchor;  if (it.enabled) it.handle() },
+			Pair(ARElementType.GEOMETRY)     { it as Anchor;  if (it.enabled) it.handle() },
 		)
 	)
 
 	val anchorHandlers : EnumMap<ARElementType, (Anchor) -> Unit> = EnumMap(
 		mapOf<ARElementType, (Anchor) -> Unit>(
-			Pair(ARElementType.TRACKABLE)    { it as Trackable;    it.handle() },
-			Pair(ARElementType.RELATIVETO)   { it as RelativeTo;   it.handle() },
+			Pair(ARElementType.TRACKABLE)    { it as Trackable;    if (it.enabled) it.handle() },
+			Pair(ARElementType.RELATIVETO)   { it as RelativeTo;   if (it.enabled) it.handle() },
 			Pair(ARElementType.SCREENANCHOR) { it as ScreenAnchor; if (it.enabled) Log.w(
 				TAG, "Got ScreenAnchor. Ignoring...") },
 			Pair(ARElementType.GEOMETRY)     { it as Geometry;     if (it.enabled) Log.w(
@@ -60,11 +63,11 @@ class SceneLoader(
 
 	val relativeToRefHandler : EnumMap<ARElementType, (RelativeToAble, RelativeTo) -> Unit> = EnumMap(
 		mapOf<ARElementType, (RelativeToAble, RelativeTo) -> Unit>(
-			Pair(ARElementType.TRACKABLE)  { ref, self -> ref as Trackable;  ref.handleRelativeTo(self) },
-			Pair(ARElementType.RELATIVETO) { ref, self -> ref as RelativeTo; ref.handleRelativeTo(self) },
-			Pair(ARElementType.GEOMETRY)   { ref, self -> ref as Geometry;   ref.handleRelativeTo(self) },
+			Pair(ARElementType.TRACKABLE)  { ref, self -> ref as Trackable;  if (self.enabled) ref.handleRelativeTo(self) },
+			Pair(ARElementType.RELATIVETO) { ref, self -> ref as RelativeTo; if (self.enabled) ref.handleRelativeTo(self) },
+			Pair(ARElementType.GEOMETRY)   { ref, self -> ref as Geometry;   if (self.enabled) ref.handleRelativeTo(self) },
 			Pair(ARElementType.MODEL)      { ref, self -> ref as Model;      if (self.enabled) Log.w(
-				TAG, "Got a RelativeTo referencing a Model. That type hasn't been implemented.") }
+				TAG, "Got a RelativeTo referencing a Model. That type hasn't been implemented. Ignoring...") }
 		)
 	)
 
@@ -75,13 +78,14 @@ class SceneLoader(
 			Pair("#genericHDPlaneTracker") { trackable, _ -> sceneController.handlePlaneTracker(trackable, Plane.Type.HORIZONTAL_DOWNWARD_FACING) },
 			Pair("#genericVPlaneTracker") { trackable, _ -> sceneController.handlePlaneTracker(trackable, Plane.Type.VERTICAL) },
 			Pair("#genericImageTracker") { trackable, config -> sceneController.handleImageTracker(trackable, config) },
+			Pair("http://www.opengis.net/arml/tracker/genericImageTracker") { trackable, config -> sceneController.handleImageTracker(trackable, config) },
 		)
 	)
 
 	val assetHandlers : EnumMap<ARElementType, (AnchorNode, VisualAsset) -> Unit> = EnumMap(
 		mapOf<ARElementType, (AnchorNode, VisualAsset) -> Unit>(
-			Pair(ARElementType.MODEL) { anchor, asset -> asset as Model; sceneController.attachModel(anchor, asset) },
-			Pair(ARElementType.IMAGE) { anchor, asset -> asset as Image; sceneController.attachImage(anchor, asset) }
+			Pair(ARElementType.MODEL) { anchor, asset -> asset as Model; if (asset.enabled) sceneController.attachModel(anchor, asset) },
+			Pair(ARElementType.IMAGE) { anchor, asset -> asset as Image; if (asset.enabled) sceneController.attachImage(anchor, asset) }
 		)
 	)
 
@@ -118,65 +122,72 @@ class SceneLoader(
 
 	private fun ARElement.handle() {
 		arElementHandlers.getOrElse(this.arElementType) {
-			Log.w(TAG, "Got top level ${this.arElementType}. That type is not supported yet.")
+			Log.w(TAG, "Got top level ${this.arElementType}. That type is not supported yet. Ignoring...")
 			null
 		}?.invoke(this)
 	}
 
 	private fun Feature.handle() {
-		if (!this.enabled) return
 		//Log.d(TAG, "Got Feature $this")
 		this.anchors.forEach { it.handle() }
 	}
 
 	private fun Anchor.handle() {
-		if (!this.enabled) return
 		anchorHandlers.getOrElse(this.arElementType) {
-			Log.w(TAG, "Got a ${this.arElementType} anchor. That type is not supported yet.")
+			Log.w(TAG, "Got a ${this.arElementType} anchor. That type is not supported yet. Ignoring...")
 			null
 		}?.invoke(this)
 	}
 
 	private fun Trackable.handle() {
-		if (!this.enabled) return
 		//Log.d(TAG, "Got Trackable $this")
 
-		//TODO: Is it really supposed to process every config?
-		this.sortedConfig.forEach {
-			trackerHandler.getOrElse(it.tracker) {
-				Log.w(TAG, "Got an unknown tracker: ${it.tracker}")
-				null
-			}?.invoke(this, it)
+		this.sortedConfig.iterator().let { iterator ->
+			while (iterator.hasNext()) {
+				val config = iterator.next()
+
+				// Exhausted list of configs with no match found
+				if (!iterator.hasNext() && !trackerHandler.containsKey(config.tracker)) {
+					Log.w(TAG, "Trackable(id=\"$id\") has no supported config. Ignoring...")
+					return
+				}
+
+				// Not supported. Ignore.
+				if (!trackerHandler.containsKey(config.tracker))
+					continue
+
+				// Supported. Handle.
+				return trackerHandler[config.tracker]!!.invoke(this, config)
+			}
 		}
 	}
 
 	private fun RelativeTo.handle() {
-		if (!this.enabled) return
 		//Log.d(TAG, "Got RelativeTo $this")
 
 		if (this.ref == "#user") {
-			//TODO
+			sceneController.addRelativeAnchorNodeToUser(this)
 			return
 		}
 
 		val other = arml.elementsById[this.ref]
 		if (other == null) {
-			Log.w(TAG, "RelativeTo $this trying to reference an element that does not exist (yet?).")
+			Log.w(TAG, "RelativeTo ${this.id} trying to reference an element that does not exist (yet?). Ignoring...")
 			return
 		}
 		if (other !is RelativeToAble) {
-			Log.w(TAG, "RelativeTo $this trying to reference an element that is not supported (${other.arElementType}).")
+			Log.w(TAG, "RelativeTo ${this.id} trying to reference an element that is not supported (${other.arElementType}). Ignoring...")
 			return
 		}
 		relativeToRefHandler.getOrElse(other.arElementType) {
-			Log.w(TAG, "Got a RelativeTo referencing a ${other.arElementType}. That type has not been implemented yet.")
+			Log.w(TAG, "Got a RelativeTo referencing a ${other.arElementType}. That type has not been implemented yet. Ignoring...")
 			null
 		}?.invoke(other, this)
 	}
 
 	private fun Trackable.handleRelativeTo(relativeTo: RelativeTo) {
 		if (!this.enabled) {
-			Log.w(TAG, "RelativeTo $relativeTo trying to reference an element that is disabled ($this).")
+			Log.w(TAG, "RelativeTo ${relativeTo.id} trying to reference an element that is disabled (${this.id}). Ignoring...")
 			return
 		}
 
@@ -199,9 +210,9 @@ class SceneLoader(
 
 	private fun Geometry.handleRelativeTo(relativeTo: RelativeTo) {
 		if (relativeTo.geometry is LineString) {
-			Log.w(TAG, "Got a RelativeTo referencing $this of type LineString. LineStrings are explicitly not supported.")
+			Log.w(TAG, "Got a RelativeTo referencing ${this.id} of type LineString. LineStrings are explicitly not supported. Ignoring...")
 			return
 		}
-		Log.w(TAG, "Got a RelativeTo referencing $this of type Geometry. That type is not supported yet.") //TODO
+		Log.w(TAG, "Got a RelativeTo referencing ${this.id} of type Geometry. That type is not supported yet. Ignoring...") //TODO
 	}
 }
