@@ -6,9 +6,9 @@ import com.google.ar.core.*
 import com.simplemobiletools.camera.ar.SceneController
 import com.simplemobiletools.camera.ar.arml.elements.Trackable
 import com.simplemobiletools.camera.ar.arml.elements.TrackableConfig
-import com.simplemobiletools.camera.ar.putIfAbsent
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.getUpdatedAugmentedImages
+
 
 class ImageTrackingModule(
 	private val sceneController: SceneController,
@@ -139,6 +139,7 @@ class ImageTrackingModule(
 				sceneController.addToScene(trackable, anchor)
 				Log.d(TAG, "Assigned anchor to Trackable(id=${trackable.id})")
 
+				//TODO: Preload assets
 				trackable.sortedAssets.forEach {
 					if (!it.enabled) return@forEach
 					context.assetHandlers.getOrElse(it.arElementType) {

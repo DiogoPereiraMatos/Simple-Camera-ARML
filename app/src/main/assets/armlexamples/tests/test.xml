@@ -31,11 +31,6 @@
 								<y>0.05</y>
 								<z>0.05</z>
 							</Scale>
-							<Orientation>
-								<tilt>90</tilt>
-								<roll>90</roll>
-								<heading>90</heading>
-							</Orientation>
 						</Model>
 					</assets>
 				</Trackable>

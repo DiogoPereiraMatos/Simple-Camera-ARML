@@ -48,6 +48,7 @@
 							<!--
 								0.25 - 0.005 * x = 0
 								x = 50
+								(offset between actual and expected centers, aka axis length, is 50 units)
 							-->
 							0 0 0.25
 						</gml:pos>

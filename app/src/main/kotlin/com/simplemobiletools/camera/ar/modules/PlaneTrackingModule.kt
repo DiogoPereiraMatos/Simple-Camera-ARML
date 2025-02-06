@@ -7,7 +7,6 @@ import com.google.ar.core.Plane
 import com.google.ar.core.TrackingState
 import com.simplemobiletools.camera.ar.SceneController
 import com.simplemobiletools.camera.ar.arml.elements.Trackable
-import com.simplemobiletools.camera.ar.putIfAbsent
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import java.util.EnumMap
@@ -107,12 +106,14 @@ class PlaneTrackingModule(
 
 			// Create google.Anchor from Plane
 			val anchor = plane.createAnchor(plane.centerPose)
+			//TODO: Get extentX and extentY
 
 			waiting.forEach { trackable ->
 				// Create AnchorNode from google.Anchor, and associate it to Anchor (trackable) adding it to the scene
 				sceneController.addToScene(trackable, anchor)
 				Log.d(TAG, "Assigned anchor to Trackable(id=${trackable.id})")
 
+				//TODO: Preload assets
 				trackable.sortedAssets.forEach {
 					if (!it.enabled) return@forEach
 					context.assetHandlers.getOrElse(it.arElementType) {

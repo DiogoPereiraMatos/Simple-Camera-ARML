@@ -10,8 +10,6 @@ import io.github.sceneview.math.Direction
 import io.github.sceneview.math.Position
 import io.github.sceneview.math.Rotation
 import io.github.sceneview.math.Size
-import io.github.sceneview.model.setBlendOrder
-import io.github.sceneview.model.setGlobalBlendOrderEnabled
 import io.github.sceneview.node.ImageNode
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
@@ -143,6 +141,7 @@ class SceneState(
 		if (getVisibility(visualAsset)) {
 			return
 		}
+
 		val anchorNode = getAnchorNode(visualAsset)
 		val visualAssetNode = getVisualAssetNode(visualAsset)
 
@@ -229,12 +228,6 @@ class SceneState(
 		//TODO: Confirm that this indeed fetches remote models
 		val modelInstance = sceneView.modelLoader.loadModelInstance(model.href) ?: return null
 
-		modelInstance.apply {
-			//setPriority(7)
-			setBlendOrder(model.zOrder)
-			setGlobalBlendOrderEnabled(true)
-		}
-
 		// From -180->180 to 0->360
 		val x = if (model.rotationVector.x < 0f) 360f + model.rotationVector.x else model.rotationVector.x
 		val y = if (model.rotationVector.y < 0f) 360f + model.rotationVector.y else model.rotationVector.y
@@ -245,7 +238,7 @@ class SceneState(
 		val modelNode = ModelNode(
 			modelInstance = modelInstance,
 			//FIXME: Doesn't appear to be doing anything. Probably overwritten by transform scale
-			scaleToUnits = 1f,
+			//scaleToUnits = 1f,
 			//FIXME: Feel free to change this
 			// (I have a feeling that it doesn't change anything)
 			// (also, it's better for some models to be on the base, but for some, like the test axis, it should keep the original center)
@@ -259,10 +252,6 @@ class SceneState(
 				rotation = rotation,
 				scale = model.scaleVector
 			)
-
-			//setPriority(7)
-			setBlendOrder(model.zOrder)
-			setGlobalBlendOrderEnabled(true)
 		}
 
 		addVisualAssetToScene(
@@ -286,7 +275,7 @@ class SceneState(
 			//TODO: percentages
 			//Keep default
 		} else if (image.width == null && image.height == null) {
-			//TODO: Find size of tracked surface
+			//TODO: get extentX and extentY from plane (PlaneTrackingModule). What about image tracking?
 			//Keep default
 		}
 		else if (image.width == null) {

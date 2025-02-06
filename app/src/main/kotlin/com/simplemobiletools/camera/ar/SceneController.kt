@@ -18,6 +18,7 @@ import com.simplemobiletools.camera.ar.modules.SelectionModule
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.getDescription
 import io.github.sceneview.ar.node.AnchorNode
+import io.github.sceneview.ar.scene.PlaneRenderer
 import io.github.sceneview.utils.readBuffer
 import kotlinx.coroutines.launch
 
@@ -81,6 +82,10 @@ class SceneController(
 
 	init {
 		sceneView.apply {
+			planeRenderer.apply {
+				planeRenderer.isEnabled = true
+				planeRenderer.planeRendererMode = PlaneRenderer.PlaneRendererMode.RENDER_CENTER
+			}
 			configureSession { session, config ->
 				config.depthMode = when (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
 					true -> Config.DepthMode.AUTOMATIC
@@ -263,6 +268,7 @@ class SceneController(
 	//== Asset stuff: ==/
 
 	fun attachModel(anchorNode: AnchorNode, model: Model) {
+		//TODO: Preload models
 		context.lifecycleScope.launch {
 			val modelNode = sceneState.attachModel(anchorNode, model, show = model.evaluateConditions())
 
@@ -272,6 +278,7 @@ class SceneController(
 	}
 
 	fun attachImage(anchorNode: AnchorNode, image: Image) {
+		//TODO: Preload images
 		//context.lifecycleScope.launch {
 			val imageNode = sceneState.attachImage(anchorNode, image, show = image.evaluateConditions())
 

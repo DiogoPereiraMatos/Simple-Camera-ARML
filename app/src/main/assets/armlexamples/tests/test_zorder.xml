@@ -5,41 +5,43 @@
 		<Feature id="solarSystemFeature">
 			<anchors>
 
-				<Trackable id="centreAnchor">
+				<Trackable id="planeAnchor">
 					<config>
 						<tracker xlink:href="#genericHUPlaneTracker" />
 						<src>look for a plane, idk</src>
 					</config>
 					<assets>
+						<!-- center is all messed up -->
 						<Model id="sunModel">
+							<enabled>true</enabled>
 							<href xlink:href="models/Sol/Sol.gltf" />
 							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
+								<x>0.12</x>
+								<y>0.12</y>
+								<z>0.12</z>
 							</Scale>
-							<zOrder>0</zOrder>
+							<zOrder>1</zOrder>
 						</Model>
 					</assets>
 				</Trackable>
 
-				<!-- Mercury will be behind (x=-0.1) the Sun, but zOrder is higher, so... let's find out what happens -->
+				<!-- Mercury will be behind (x=0.1) the Sun, but zOrder is higher, so... let's find out what happens -->
 				<RelativeTo id="mercuryAnchor">
-					<ref xlink:href="centreAnchor" />
+					<ref xlink:href="planeAnchor" />
 					<gml:Point id="mercuryOffset" srsDimension="3">
 						<gml:pos>
-							-0.1 0 0
+							0.1 0 0
 						</gml:pos>
 					</gml:Point>
 					<assets>
 						<Model id="mercuryModel">
 							<href xlink:href="models/Mercury/Mercury.gltf" />
 							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
 							</Scale>
-							<zOrder>1</zOrder>
+							<zOrder>2</zOrder>
 						</Model>
 					</assets>
 				</RelativeTo>

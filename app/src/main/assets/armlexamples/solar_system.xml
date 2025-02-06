@@ -5,179 +5,186 @@
 		<Feature id="solarSystemFeature">
 			<anchors>
 
-				<Trackable id="centreAnchor">
+				<Trackable id="planeAnchor">
 					<config>
 						<tracker xlink:href="#genericHUPlaneTracker" />
 						<src>look for a plane, idk</src>
 					</config>
 					<assets>
+						<!-- center is all messed up -->
 						<Model id="sunModel">
+							<enabled>true</enabled>
 							<href xlink:href="models/Sol/Sol.gltf" />
 							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
+								<x>0.12</x>
+								<y>0.12</y>
+								<z>0.12</z>
 							</Scale>
 						</Model>
 					</assets>
 				</Trackable>
 
 				<RelativeTo id="mercuryAnchor">
-					<ref xlink:href="centreAnchor" />
+					<ref xlink:href="planeAnchor" />
 					<gml:Point id="mercuryOffset" srsDimension="3">
 						<gml:pos>
-							0 0 0.1
+							0 0 0.05
 						</gml:pos>
 					</gml:Point>
 					<assets>
 						<Model id="mercuryModel">
 							<href xlink:href="models/Mercury/Mercury.gltf" />
 							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
 							</Scale>
 						</Model>
 					</assets>
 				</RelativeTo>
 
-				<!--
-
 				<RelativeTo id="venusAnchor">
-					<ref xlink:href="centreAnchor" />
+					<ref xlink:href="planeAnchor" />
 					<gml:Point id="venusOffset" srsDimension="3">
 						<gml:pos>
-							0 0 0.2
+							<!--
+								0.1 = 0.05 * x
+								x = 2
+								(real diameter of venus and mercury is 2 units)
+							-->
+							0 0 0.15
 						</gml:pos>
 					</gml:Point>
 					<assets>
 						<Model id="venusModel">
 							<href xlink:href="models/Venus/Venus.gltf" />
 							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
 							</Scale>
 						</Model>
 					</assets>
 				</RelativeTo>
 
 				<RelativeTo id="earthAnchor">
-					<ref xlink:href="centreAnchor" />
+					<ref xlink:href="planeAnchor" />
 					<gml:Point id="earthOffset" srsDimension="3">
 						<gml:pos>
-							0 0 0.3
+							0 0 0.25
 						</gml:pos>
 					</gml:Point>
 					<assets>
 						<Model id="earthModel">
 							<href xlink:href="models/Earth/Earth.gltf" />
 							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
 							</Scale>
 						</Model>
 					</assets>
 				</RelativeTo>
 
 				<RelativeTo id="marsAnchor">
-					<ref xlink:href="centreAnchor" />
+					<ref xlink:href="planeAnchor" />
 					<gml:Point id="marsOffset" srsDimension="3">
 						<gml:pos>
-							0 0 0.4
+							0 0 0.35
 						</gml:pos>
 					</gml:Point>
 					<assets>
 						<Model id="marsModel">
 							<href xlink:href="models/Mars/Mars.gltf" />
 							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
 							</Scale>
 						</Model>
 					</assets>
 				</RelativeTo>
 
 				<RelativeTo id="jupiterAnchor">
-					<ref xlink:href="centreAnchor" />
+					<ref xlink:href="planeAnchor" />
 					<gml:Point id="jupiterOffset" srsDimension="3">
 						<gml:pos>
-							0 0 0.5
+							0 0 0.45
 						</gml:pos>
 					</gml:Point>
 					<assets>
 						<Model id="jupiterModel">
 							<href xlink:href="models/Jupiter/Jupiter.gltf" />
 							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
 							</Scale>
 						</Model>
 					</assets>
 				</RelativeTo>
 
 				<RelativeTo id="saturnAnchor">
-					<ref xlink:href="centreAnchor" />
+					<ref xlink:href="planeAnchor" />
 					<gml:Point id="saturnOffset" srsDimension="3">
 						<gml:pos>
-							0 0 0.6
+							0 0 0.55
 						</gml:pos>
 					</gml:Point>
 					<assets>
+						<!-- scale is messed up because of the rings -->
 						<Model id="saturnModel">
 							<href xlink:href="models/Saturn/Saturn.gltf" />
 							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
 							</Scale>
 						</Model>
 					</assets>
 				</RelativeTo>
 
 				<RelativeTo id="uranusAnchor">
-					<ref xlink:href="centreAnchor" />
+					<ref xlink:href="planeAnchor" />
 					<gml:Point id="uranusOffset" srsDimension="3">
 						<gml:pos>
-							0 0 0.7
+							0 0 0.65
 						</gml:pos>
 					</gml:Point>
 					<assets>
+						<!-- scale is messed up because of the rings -->
 						<Model id="uranusModel">
 							<href xlink:href="models/Uranus/Uranus.gltf" />
 							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
 							</Scale>
 						</Model>
 					</assets>
 				</RelativeTo>
 
 				<RelativeTo id="neptuneAnchor">
-					<ref xlink:href="centreAnchor" />
+					<ref xlink:href="planeAnchor" />
 					<gml:Point id="neptuneOffset" srsDimension="3">
 						<gml:pos>
-							0 0 0.8
+							0 0 0.75
 						</gml:pos>
 					</gml:Point>
 					<assets>
 						<Model id="neptuneModel">
 							<href xlink:href="models/Neptune/Neptune.gltf" />
 							<Scale>
-								<x>0.25</x>
-								<y>0.25</y>
-								<z>0.25</z>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
 							</Scale>
 						</Model>
 					</assets>
 				</RelativeTo>
-				-->
 
 			</anchors>
 		</Feature>
+
 	</ARElements>
 </arml>
