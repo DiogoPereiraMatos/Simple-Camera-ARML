@@ -32,7 +32,7 @@ class SceneState(
 		|   Anchor    |   |   | AnchorNode  | <-- |    Anchor   | <------- | Trackable (eg Plane) |
 		+-------------+   |   +-------------+     +-------------+          +----------------------+
 		       |          |          |
-		       |          |          | (if placed / shown)
+		       |          |          |
 		       v          |          v
 		+-------------+   |   +-----------------------+
 		|   V.Asset   |   |   |  ModelNode/ImageNode  | (VisualAssetNode)
@@ -106,6 +106,10 @@ class SceneState(
 		anchorNodes[visualAsset] = anchorNode
 	}
 
+
+
+
+
 	fun getVisualAssetNode(visualAsset: VisualAsset): Node? {
 		return visualAssetNodes[visualAsset]
 	}
@@ -114,26 +118,35 @@ class SceneState(
 		visualAssetNodes[visualAsset] = visualAssetNode
 	}
 
-
-
-
-	// Asset is placed only when the ModelNode is a child of the AnchorNode
-	// There is no function (that I know of) that hides and shows model on command, so this is how I'll do it...
-
 	fun getVisibility(visualAsset: VisualAsset): Boolean {
-		val anchorNode = getAnchorNode(visualAsset)
 		val visualAssetNode = getVisualAssetNode(visualAsset)
 
-		return when (anchorNode == null || visualAssetNode == null) {
-			true -> false
-			false -> anchorNode.childNodes.contains(visualAssetNode)
+		if (visualAssetNode == null) {
+			Log.e(TAG, "Error getting visibility of VisualAsset(id=${visualAsset.id}). Node not found.")
+			return false
+		}
+
+		return when (visualAssetNode) {
+			is ModelNode -> visualAssetNode.isVisible
+			is ImageNode -> visualAssetNode.isVisible
+			else -> {
+				Log.e(TAG, "Error getting visibility of VisualAsset(id=${visualAsset.id}). Node type not supported.")
+				false
+			}
 		}
 	}
 
 	fun setVisibility(visualAsset: VisualAsset, visible: Boolean) {
-		when (visible) {
-			true -> show(visualAsset)
-			false -> hide(visualAsset)
+		val visualAssetNode = getVisualAssetNode(visualAsset)
+
+		if (visualAssetNode == null) {
+			Log.e(TAG, "Error setting visibility of VisualAsset(id=${visualAsset.id}). Node not found.")
+			return
+		}
+
+		when (visualAssetNode) {
+			is ModelNode -> visualAssetNode.setLayerVisible(visible)
+			is ImageNode -> visualAssetNode.setLayerVisible(visible)
 		}
 	}
 
@@ -141,34 +154,16 @@ class SceneState(
 		if (getVisibility(visualAsset)) {
 			return
 		}
-
-		val anchorNode = getAnchorNode(visualAsset)
-		val visualAssetNode = getVisualAssetNode(visualAsset)
-
-		if (anchorNode == null || visualAssetNode == null) {
-			Log.e(TAG, "Error showing asset: $visualAsset")
-			return
-		}
-
 		Log.d(TAG, "Showing VisualAsset(id=${visualAsset.id})")
-		anchorNode.addChildNode(visualAssetNode)
+		setVisibility(visualAsset, true)
 	}
 
 	fun hide(visualAsset: VisualAsset) {
 		if (!getVisibility(visualAsset)) {
 			return
 		}
-
-		val anchorNode = getAnchorNode(visualAsset)
-		val visualAssetNode = getVisualAssetNode(visualAsset)
-
-		if (anchorNode == null || visualAssetNode == null) {
-			Log.e(TAG, "Error hiding asset: $visualAsset")
-			return
-		}
-
 		Log.d(TAG, "Hiding VisualAsset(id=${visualAsset.id})")
-		anchorNode.removeChildNode(visualAssetNode)
+		setVisibility(visualAsset, false)
 	}
 
 
@@ -332,14 +327,14 @@ class SceneState(
 		setAnchorNode(visualAsset, anchorNode)
 		setVisualAssetNode(visualAsset, visualAssetNode)
 
+		setVisibility(visualAsset, show)
+
+		anchorNode.addChildNode(visualAssetNode)
+		Log.d(TAG, "Placed VisualAsset(id=${visualAsset.id})")
+
 		if (visualAsset.conditions.isNotEmpty()) {
 			conditionalVisualAssets.add(visualAsset)
 			Log.d(TAG, "Added VisualAsset(id=${visualAsset.id}) to conditionalVisualAssets")
-		}
-
-		if (show) {
-			anchorNode.addChildNode(visualAssetNode)  // equivalent to show()
-			Log.d(TAG, "Placed VisualAsset(id=${visualAsset.id})")
 		}
 	}
 

@@ -31,6 +31,9 @@
 								<y>0.05</y>
 								<z>0.05</z>
 							</Scale>
+							<SelectedCondition>
+								<selected>true</selected>
+							</SelectedCondition>
 						</Model>
 					</assets>
 				</Trackable>
