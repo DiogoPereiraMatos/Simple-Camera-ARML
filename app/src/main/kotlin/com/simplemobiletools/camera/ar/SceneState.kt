@@ -228,7 +228,6 @@ class SceneState(
 		val y = if (model.rotationVector.y < 0f) 360f + model.rotationVector.y else model.rotationVector.y
 		val z = if (model.rotationVector.z < 0f) 360f + model.rotationVector.z else model.rotationVector.z
 		val rotation = Rotation(x, y, z)
-		Log.d(TAG, "TEST: rotation=$rotation")
 
 		val modelNode = ModelNode(
 			modelInstance = modelInstance,
@@ -287,16 +286,12 @@ class SceneState(
 		}
 
 		val size: Size = Size(imageWidth, imageHeight)
-		Log.d(TAG, "TEST: width=${image.width}, height=${image.height}")
-		Log.d(TAG, "TEST: bitmapWidth=${bitmap.width}, bitmapHeight=${bitmap.height}")
-		Log.d(TAG, "TEST: size=$size")
 
 		// From -180->180 to 0->360
 		val x = if (image.rotationVector.x < 0f) 360f + image.rotationVector.x else image.rotationVector.x
 		val y = if (image.rotationVector.y < 0f) 360f + image.rotationVector.y else image.rotationVector.y
 		val z = if (image.rotationVector.z < 0f) 360f + image.rotationVector.z else image.rotationVector.z
 		val rotation = Rotation(x, y, z)
-		Log.d(TAG, "TEST: rotation=$rotation")
 
 		val imageNode = ImageNode(
 			materialLoader = sceneView.materialLoader,
@@ -350,8 +345,6 @@ class SceneState(
 			}
 		}
 
-		Log.d(TAG, "TEST: newPos=$newPos")
-
 		val newAnchorNode = AnchorNode(sceneView.engine, other.anchor).apply {
 			isEditable = true
 			other.addChildNode(this)
@@ -374,5 +367,18 @@ class SceneState(
 		val node = Node(userAnchorNode.engine)
 		userAnchorNode.addChildNode(node)
 		return node
+	}
+
+
+
+
+	val featureMap : HashMap<VisualAsset, Feature> = HashMap()
+	fun getFeature(visualAsset: VisualAsset): Feature {
+		return featureMap[visualAsset]!!
+	}
+
+	val anchorMap : HashMap<VisualAsset, Anchor> = HashMap()
+	fun getAnchor(visualAsset: VisualAsset): Anchor {
+		return anchorMap[visualAsset]!!
 	}
 }

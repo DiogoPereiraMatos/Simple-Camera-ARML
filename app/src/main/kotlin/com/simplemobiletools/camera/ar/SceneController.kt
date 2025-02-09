@@ -264,15 +264,20 @@ class SceneController(
 	fun getAnchorNode(anchor: Anchor): AnchorNode? = sceneState.getAnchorNode(anchor)
 	fun hasAnchorNode(visualAsset: VisualAsset): Boolean = sceneState.hasAnchorNode(visualAsset)
 	fun getAnchorNode(visualAsset: VisualAsset): AnchorNode? = sceneState.getAnchorNode(visualAsset)
+	fun getFeature(visualAsset: VisualAsset): Feature = sceneState.getFeature(visualAsset)
+	fun getAnchor(visualAsset: VisualAsset): Anchor = sceneState.getAnchor(visualAsset)
 
 	//== Asset stuff: ==/
 
 	fun attachModel(anchorNode: AnchorNode, model: Model) {
 		//TODO: Preload models
 		context.lifecycleScope.launch {
-			val modelNode = sceneState.attachModel(anchorNode, model, show = model.evaluateConditions())
+			val modelNode = sceneState.attachModel(
+				anchorNode = anchorNode,
+				model = model,
+				show = model.evaluateConditions()
+			)
 
-			selectionModule.setSelected(model, false)
 			modelNode?.onDoubleTap = { selectionModule.toggleSelected(model); true }  //FIXME: Only works for some?
 		}
 	}
@@ -280,10 +285,13 @@ class SceneController(
 	fun attachImage(anchorNode: AnchorNode, image: Image) {
 		//TODO: Preload images
 		//context.lifecycleScope.launch {
-			val imageNode = sceneState.attachImage(anchorNode, image, show = image.evaluateConditions())
+			val imageNode = sceneState.attachImage(
+				anchorNode = anchorNode,
+				image = image,
+				show = image.evaluateConditions()
+			)
 
-			selectionModule.setSelected(image, false)
-			imageNode?.onDoubleTap = { selectionModule.toggleSelected(image); true }
+			imageNode?.onDoubleTap = { selectionModule.toggleSelected(image); true }  //FIXME: Only works for some?
 		//}
 	}
 

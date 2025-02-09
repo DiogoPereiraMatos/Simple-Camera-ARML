@@ -84,8 +84,8 @@ class SceneLoader(
 
 	val assetHandlers : EnumMap<ARElementType, (AnchorNode, VisualAsset) -> Unit> = EnumMap(
 		mapOf<ARElementType, (AnchorNode, VisualAsset) -> Unit>(
-			Pair(ARElementType.MODEL) { anchor, asset -> asset as Model; if (asset.enabled) sceneController.attachModel(anchor, asset) },
-			Pair(ARElementType.IMAGE) { anchor, asset -> asset as Image; if (asset.enabled) sceneController.attachImage(anchor, asset) }
+			Pair(ARElementType.MODEL) { anchorNode, asset -> asset as Model; if (asset.enabled) sceneController.attachModel(anchorNode, asset) },
+			Pair(ARElementType.IMAGE) { anchorNode, asset -> asset as Image; if (asset.enabled) sceneController.attachImage(anchorNode, asset) }
 		)
 	)
 
@@ -129,6 +129,24 @@ class SceneLoader(
 
 	private fun Feature.handle() {
 		//Log.d(TAG, "Got Feature $this")
+
+		this.anchors.forEach { anchor ->
+			when (anchor) {
+				is ARAnchor -> {
+					anchor.assets.forEach { asset ->
+						sceneState.anchorMap[asset] = anchor
+						sceneState.featureMap[asset] = this
+					}
+				}
+				is ScreenAnchor -> {
+					anchor.assets.forEach { asset ->
+						sceneState.anchorMap[asset] = anchor
+						sceneState.featureMap[asset] = this
+					}
+				}
+			}
+		}
+
 		this.anchors.forEach { it.handle() }
 	}
 

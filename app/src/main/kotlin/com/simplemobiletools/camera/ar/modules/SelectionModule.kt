@@ -2,9 +2,7 @@ package com.simplemobiletools.camera.ar.modules
 
 import android.util.Log
 import com.simplemobiletools.camera.ar.SceneController
-import com.simplemobiletools.camera.ar.arml.elements.Condition
-import com.simplemobiletools.camera.ar.arml.elements.SelectedCondition
-import com.simplemobiletools.camera.ar.arml.elements.VisualAsset
+import com.simplemobiletools.camera.ar.arml.elements.*
 import io.github.sceneview.ar.ARSceneView
 
 class SelectionModule(
@@ -61,6 +59,22 @@ class SelectionModule(
 		return isSelected[visualAsset] ?: false
 	}
 
+	fun isSelected(anchor: Anchor): Boolean {
+		val assets = when (anchor) {
+			is ARAnchor -> anchor.assets
+			is ScreenAnchor -> anchor.assets
+			else -> {
+				Log.e(TAG, "Unexpected anchor type: $anchor")
+				return false
+			}
+		}
+		return assets.any { isSelected(it) }
+	}
+
+	fun isSelected(feature: Feature): Boolean {
+		return feature.anchors.any { isSelected(it) }
+	}
+
 	fun setSelected(visualAsset: VisualAsset, selected: Boolean) {
 		isSelected[visualAsset] = selected
 		Log.d(TAG, "${if (selected) "Selected" else "Unselected" } VisualAsset(id=${visualAsset.id})")
@@ -82,7 +96,9 @@ class SelectionModule(
 	override fun evaluateCondition(visualAsset: VisualAsset, condition: Condition): Boolean {
 		condition as SelectedCondition
 
-		//TODO: Consider listener property
-		return isSelected(visualAsset) == condition.selected
+		return when (condition.listener) {
+			Listener.FEATURE -> isSelected(sceneController.getFeature(visualAsset)) == condition.selected
+			Listener.ANCHOR -> isSelected(sceneController.getAnchor(visualAsset)) == condition.selected
+		}
 	}
 }
