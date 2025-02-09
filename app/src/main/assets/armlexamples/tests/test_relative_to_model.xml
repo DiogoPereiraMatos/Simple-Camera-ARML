@@ -1,0 +1,51 @@
+
+<arml xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<ARElements>
+
+		<Feature id="testFeature">
+			<anchors>
+
+				<Trackable>
+					<config>
+						<tracker xlink:href="#genericHUPlaneTracker" />
+						<src>look for a plane, idk</src>
+					</config>
+					<assets>
+						<Model id="axisModel">
+							<href xlink:href="models/misc/XYZ.glb" />
+							<Scale>
+								<x>0.005</x>
+								<y>0.005</y>
+								<z>0.005</z>
+							</Scale>
+							<Orientation>
+								<roll>90</roll>
+							</Orientation>
+						</Model>
+					</assets>
+				</Trackable>
+
+				<RelativeTo>
+					<ref xlink:href="axisModel" />
+					<gml:Point id="py" srsDimension="3">
+						<gml:pos>
+							0 1 0
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<Model>
+							<href xlink:href="models/misc/Teapot.glb" />
+							<Scale>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
+							</Scale>
+						</Model>
+					</assets>
+				</RelativeTo>
+
+			</anchors>
+		</Feature>
+
+	</ARElements>
+</arml>

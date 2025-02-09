@@ -276,7 +276,8 @@ class SceneController(
 				show = model.evaluateConditions()
 			)
 
-			modelNode?.onDoubleTap = { selectionModule.toggleSelected(model); true }
+			//modelNode?.onDoubleTap = { selectionModule.toggleSelected(model); true }
+			modelNode?.onSingleTapConfirmed = { selectionModule.toggleSelected(model); true }
 		}
 	}
 
@@ -289,7 +290,8 @@ class SceneController(
 				show = image.evaluateConditions()
 			)
 
-			imageNode?.onDoubleTap = { selectionModule.toggleSelected(image); true }
+			//imageNode?.onDoubleTap = { selectionModule.toggleSelected(image); true }
+			imageNode?.onSingleTapConfirmed = { selectionModule.toggleSelected(image); true }
 		//}
 	}
 
