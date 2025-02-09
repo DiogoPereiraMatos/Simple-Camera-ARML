@@ -4,7 +4,7 @@ import android.util.Log
 import com.google.ar.core.Plane
 import com.simplemobiletools.camera.ar.arml.elements.*
 import com.simplemobiletools.camera.ar.arml.elements.gml.LineString
-import io.github.sceneview.ar.node.AnchorNode
+import io.github.sceneview.node.Node
 import java.util.EnumMap
 
 class SceneLoader(
@@ -82,10 +82,10 @@ class SceneLoader(
 		)
 	)
 
-	val assetHandlers : EnumMap<ARElementType, (AnchorNode, VisualAsset) -> Unit> = EnumMap(
-		mapOf<ARElementType, (AnchorNode, VisualAsset) -> Unit>(
-			Pair(ARElementType.MODEL) { anchorNode, asset -> asset as Model; if (asset.enabled) sceneController.attachModel(anchorNode, asset) },
-			Pair(ARElementType.IMAGE) { anchorNode, asset -> asset as Image; if (asset.enabled) sceneController.attachImage(anchorNode, asset) }
+	val assetHandlers : EnumMap<ARElementType, (Node, VisualAsset) -> Unit> = EnumMap(
+		mapOf<ARElementType, (Node, VisualAsset) -> Unit>(
+			Pair(ARElementType.MODEL) { node, asset -> asset as Model; if (asset.enabled) sceneController.attachModel(node, asset) },
+			Pair(ARElementType.IMAGE) { node, asset -> asset as Image; if (asset.enabled) sceneController.attachImage(node, asset) }
 		)
 	)
 
@@ -184,7 +184,7 @@ class SceneLoader(
 		//Log.d(TAG, "Got RelativeTo $this")
 
 		if (this.ref == "#user") {
-			sceneController.addRelativeAnchorNodeToUser(this)
+			sceneController.addRelativeNodeToUser(this)
 			return
 		}
 
@@ -209,8 +209,8 @@ class SceneLoader(
 			return
 		}
 
-		if (sceneState.hasAnchorNode(this)) {
-			sceneController.addRelativeAnchorNode(relativeTo, this)
+		if (sceneState.hasParentNode(this)) {
+			sceneController.addRelativeNode(relativeTo, this)
 			Log.d(TAG, "Created RelativeTo(id=${relativeTo.id})")
 		} else {
 			sceneState.addToRelativeQueue(this, relativeTo)
@@ -218,8 +218,8 @@ class SceneLoader(
 	}
 
 	private fun RelativeTo.handleRelativeTo(relativeTo: RelativeTo) {
-		if (sceneState.hasAnchorNode(this)) {
-			sceneController.addRelativeAnchorNode(relativeTo, this)
+		if (sceneState.hasParentNode(this)) {
+			sceneController.addRelativeNode(relativeTo, this)
 			Log.d(TAG, "Created RelativeTo(id=${relativeTo.id})")
 		} else {
 			sceneState.addToRelativeQueue(this, relativeTo)

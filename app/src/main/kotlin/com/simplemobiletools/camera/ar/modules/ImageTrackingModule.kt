@@ -116,40 +116,42 @@ class ImageTrackingModule(
 	}
 
 	private fun assignImages(context: SceneController, images: Collection<AugmentedImage>) {
-		images.forEach { img ->
+		for (img in images) {
 			if (img.trackingState != TrackingState.TRACKING) {
 				Log.d(TAG, "Detected Image: ${img.name}; idx=${img.index}; tracking=${img.trackingState}")
-				return@forEach
+				continue
 			}
 
 			if (isImageKnown(img.name))
-				return@forEach
+				continue
 
 			val waiting = getQueuedImages(img.name)!!
 			if (waiting.isEmpty())
-				return@forEach
+				continue
 
 			Log.d(TAG, "Detected Image: ${img.name}; idx=${img.index}; tracking=${img.trackingState}; size=(${img.extentX},${img.extentZ})")
 
 			// Create google.Anchor from Image
 			val anchor = img.createAnchor(img.centerPose)
 
-			waiting.forEach { trackable ->
-				// Create AnchorNode from google.Anchor, and associate it to Anchor (trackable) adding it to the scene
+			for (trackable in waiting) {
+				// Create AnchorNode from google.Anchor, and associate it to Anchor (trackable), adding it to the scene
 				sceneController.addToScene(trackable, anchor)
 				Log.d(TAG, "Assigned anchor to Trackable(id=${trackable.id})")
 
 				//TODO: Preload assets
-				trackable.sortedAssets.forEach {
-					if (!it.enabled) return@forEach
-					context.assetHandlers.getOrElse(it.arElementType) {
-						Log.w(TAG, "Got a ${it.arElementType} asset. That type is not supported yet. Ignoring...")
+				for (asset in trackable.sortedAssets) {
+					if (!asset.enabled) continue
+
+					// Call handler
+					context.assetHandlers.getOrElse(asset.arElementType) {
+						Log.w(TAG, "Got a ${asset.arElementType} asset. That type is not supported yet. Ignoring...")
 						null
-					}?.invoke(sceneController.getAnchorNode(trackable)!!, it)
+					}?.invoke(sceneController.getParentNode(trackable)!!, asset)
 				}
 
 				// Add RelativeTos referencing this Trackable
-				context.propagateAnchorNode(trackable)
+				context.propagateNode(trackable)
 			}
 
 			// All processed. Clear queue

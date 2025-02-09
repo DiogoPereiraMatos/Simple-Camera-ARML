@@ -32,8 +32,8 @@
 								<z>0.05</z>
 							</Scale>
 							<DistanceCondition>
-								<max>10</max>
-								<min>1</min>
+								<max>0.5</max>
+								<min>0.3</min>
 							</DistanceCondition>
 						</Model>
 					</assets>

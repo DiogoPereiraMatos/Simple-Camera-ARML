@@ -93,37 +93,41 @@ class PlaneTrackingModule(
 	private fun assignPlanes(context: SceneController, planes: Collection<Plane>) {
 		val types = Plane.Type.entries
 
-		types.forEach { type ->
-			val plane = planes.firstOrNull { it.type == type } ?: return@forEach
+		for (type in types) {
+			val plane = planes.firstOrNull { it.type == type } ?: continue
 
 			if (plane.trackingState == TrackingState.PAUSED || plane.trackingState == TrackingState.STOPPED)
-				return@forEach
+				continue
 
 			// Get Trackables waiting for that type of plane
 			val waiting = getQueuedAnchors(type)
 			if (waiting.isEmpty())
-				return@forEach
+				continue
+
+			Log.d(TAG, "Detected Plane: type=${plane.type}; tracking=${plane.trackingState}; size=(${plane.extentX},${plane.extentZ})")
 
 			// Create google.Anchor from Plane
 			val anchor = plane.createAnchor(plane.centerPose)
-			//TODO: Get extentX and extentY
+			//TODO: Save extentX and extentY
 
-			waiting.forEach { trackable ->
+			for (trackable in waiting) {
 				// Create AnchorNode from google.Anchor, and associate it to Anchor (trackable) adding it to the scene
 				sceneController.addToScene(trackable, anchor)
 				Log.d(TAG, "Assigned anchor to Trackable(id=${trackable.id})")
 
 				//TODO: Preload assets
-				trackable.sortedAssets.forEach {
-					if (!it.enabled) return@forEach
-					context.assetHandlers.getOrElse(it.arElementType) {
-						Log.w(TAG, "Got a ${it.arElementType} asset. That type is not supported yet. Ignoring...")
+				for (asset in trackable.sortedAssets) {
+					if (!asset.enabled) continue
+
+					// Call handler
+					context.assetHandlers.getOrElse(asset.arElementType) {
+						Log.w(TAG, "Got a ${asset.arElementType} asset. That type is not supported yet. Ignoring...")
 						null
-					}?.invoke(sceneController.getAnchorNode(trackable)!!, it)
+					}?.invoke(sceneController.getParentNode(trackable)!!, asset)
 				}
 
 				// Add RelativeTos referencing this Trackable
-				context.propagateAnchorNode(trackable)
+				context.propagateNode(trackable)
 			}
 
 			// All processed. Clear queue

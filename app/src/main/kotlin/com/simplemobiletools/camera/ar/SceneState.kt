@@ -28,9 +28,9 @@ class SceneState(
         - Trackable       |          |
         - ScreenAnchor    |          |           (tracked by arcore)         (detected by arcore)
         - ...)		      |          v       (com.google.ar.core.Anchor)  (com.google.ar.core.Trackable)
-		+-------------+   |   +-------------+     +-------------+          +----------------------+
-		|   Anchor    |   |   | AnchorNode  | <-- |    Anchor   | <------- | Trackable (eg Plane) |
-		+-------------+   |   +-------------+     +-------------+          +----------------------+
+		+-------------+   |   +---------------+     +-------------+          +----------------------+
+		|   Anchor    |   |   | (Anchor)Node  | <-- |    Anchor   | <------- | Trackable (eg Plane) |
+		+-------------+   |   +---------------+     +-------------+          +----------------------+
 		       |          |          |
 		       |          |          |
 		       v          |          v
@@ -39,11 +39,11 @@ class SceneState(
 		+-------------+   |   +-----------------------+
 	 */
 
-	// Save AnchorNodes of assigned Trackables and RelativeTo
-	private val assignedAnchors : HashMap<Anchor, AnchorNode> = HashMap()
+	// Save parent Nodes of assigned Trackables and RelativeTo
+	private val assignedAnchors : HashMap<Anchor, Node> = HashMap()
 
-	// Save AnchorNodes of VisualAssets
-	private val anchorNodes : HashMap<VisualAsset, AnchorNode> = HashMap()
+	// Save parent Nodes of VisualAssets
+	private val parentNodes : HashMap<VisualAsset, Node> = HashMap()
 
 	// Save ModelNodes and ImageNodes of VisualAssets
 	private val visualAssetNodes : HashMap<VisualAsset, Node> = HashMap()
@@ -75,35 +75,35 @@ class SceneState(
 		// Clear auxiliary stuff
 		conditionalVisualAssets.clear()
 		visualAssetNodes.clear()
-		anchorNodes.clear()
+		parentNodes.clear()
 
 		Log.d(TAG, "Reset Scene State.")
 	}
 
 
 
-	fun hasAnchorNode(anchor: Anchor): Boolean {
+	fun hasParentNode(anchor: Anchor): Boolean {
 		return assignedAnchors.containsKey(anchor)
 	}
 
-	fun getAnchorNode(anchor: Anchor): AnchorNode? {
+	fun getParentNode(anchor: Anchor): Node? {
 		return assignedAnchors[anchor]
 	}
 
-	fun setAnchorNode(anchor: Anchor, anchorNode: AnchorNode) {
-		assignedAnchors[anchor] = anchorNode
+	fun setParentNode(anchor: Anchor, node: Node) {
+		assignedAnchors[anchor] = node
 	}
 
-	fun hasAnchorNode(visualAsset: VisualAsset): Boolean {
-		return anchorNodes.containsKey(visualAsset)
+	fun hasParentNode(visualAsset: VisualAsset): Boolean {
+		return parentNodes.containsKey(visualAsset)
 	}
 
-	fun getAnchorNode(visualAsset: VisualAsset): AnchorNode? {
-		return anchorNodes[visualAsset]
+	fun getParentNode(visualAsset: VisualAsset): Node? {
+		return parentNodes[visualAsset]
 	}
 
-	fun setAnchorNode(visualAsset: VisualAsset, anchorNode: AnchorNode) {
-		anchorNodes[visualAsset] = anchorNode
+	fun setParentNode(visualAsset: VisualAsset, node: Node) {
+		parentNodes[visualAsset] = node
 	}
 
 
@@ -210,16 +210,16 @@ class SceneState(
 				scale = Size(1f, 1f, 1f)
 			)
 		}
-		setAnchorNode(trackable, anchorNode)
+		setParentNode(trackable, anchorNode)
 		sceneView.addChildNode(anchorNode)
 	}
 
 	fun addToScene(trackable: Trackable, anchorNode: AnchorNode) {
-		setAnchorNode(trackable, anchorNode)
+		setParentNode(trackable, anchorNode)
 		sceneView.addChildNode(anchorNode)
 	}
 
-	suspend fun attachModel(anchorNode: AnchorNode, model: Model, show: Boolean = true): ModelNode? {
+	suspend fun attachModel(node: Node, model: Model, show: Boolean = true): ModelNode? {
 		//TODO: Confirm that this indeed fetches remote models
 		val modelInstance = sceneView.modelLoader.loadModelInstance(model.href) ?: return null
 
@@ -249,7 +249,7 @@ class SceneState(
 		}
 
 		addVisualAssetToScene(
-			anchorNode = anchorNode,
+			node = node,
 			visualAssetNode = modelNode,
 			visualAsset = model,
 			show = show
@@ -258,7 +258,7 @@ class SceneState(
 		return modelNode
 	}
 
-	fun attachImage(anchorNode: AnchorNode, image: Image, show: Boolean = true): ImageNode? {
+	fun attachImage(node: Node, image: Image, show: Boolean = true): ImageNode? {
 		//TODO: Fetch remote image
 		val bitmap = BitmapFactory.decodeStream(projectAssets.open(image.href)) ?: return null
 
@@ -309,7 +309,7 @@ class SceneState(
 		}
 
 		addVisualAssetToScene(
-			anchorNode = anchorNode,
+			node = node,
 			visualAssetNode = imageNode,
 			visualAsset = image,
 			show = show
@@ -318,13 +318,13 @@ class SceneState(
 		return imageNode
 	}
 
-	private fun addVisualAssetToScene(anchorNode: AnchorNode, visualAssetNode: Node, visualAsset: VisualAsset, show: Boolean = true) {
-		setAnchorNode(visualAsset, anchorNode)
+	private fun addVisualAssetToScene(node: Node, visualAssetNode: Node, visualAsset: VisualAsset, show: Boolean = true) {
+		setParentNode(visualAsset, node)
 		setVisualAssetNode(visualAsset, visualAssetNode)
 
 		setVisibility(visualAsset, show)
 
-		anchorNode.addChildNode(visualAssetNode)
+		node.addChildNode(visualAssetNode)
 		Log.d(TAG, "Placed VisualAsset(id=${visualAsset.id})")
 
 		if (visualAsset.conditions.isNotEmpty()) {
@@ -355,19 +355,35 @@ class SceneState(
 				scale = Size(1f, 1f, 1f)
 			)
 		}
-		setAnchorNode(relativeTo, newAnchorNode)
+		setParentNode(relativeTo, newAnchorNode)
 
 		return newAnchorNode
 	}
 
-	//TODO
-	fun addRelativeAnchorNodeToUser(relativeTo: RelativeTo): Node {
-		val userAnchorNode = sceneView.cameraNode
+	fun addRelativeNode(relativeTo: RelativeTo, other: Node): Node {
+		val newPos = relativeTo.geometry.let {
+			when(it) {
+				is Point -> it.asVec3
+				else -> Position(0f,0f,0f)
+			}
+		}
 
-		val node = Node(userAnchorNode.engine)
-		userAnchorNode.addChildNode(node)
-		return node
+		val newAnchorNode = Node(sceneView.engine).apply {
+			isEditable = true
+			other.addChildNode(this)
+
+			transform(
+				position = newPos,
+				rotation = Rotation(0f, 0f, 0f),
+				scale = Size(1f, 1f, 1f)
+			)
+		}
+		setParentNode(relativeTo, newAnchorNode)
+
+		return newAnchorNode
 	}
+
+	fun addRelativeNodeToUser(relativeTo: RelativeTo): Node = addRelativeNode(relativeTo, sceneView.cameraNode)
 
 
 

@@ -1,13 +1,12 @@
 package com.simplemobiletools.camera.ar.modules
 
-import com.google.ar.core.Pose
 import com.simplemobiletools.camera.ar.SceneController
 import com.simplemobiletools.camera.ar.arml.elements.Condition
 import com.simplemobiletools.camera.ar.arml.elements.DistanceCondition
 import com.simplemobiletools.camera.ar.arml.elements.VisualAsset
 import io.github.sceneview.ar.ARSceneView
-import io.github.sceneview.ar.arcore.distanceTo
-import kotlin.math.absoluteValue
+import io.github.sceneview.ar.arcore.position
+import io.github.sceneview.math.Position
 
 class DistanceModule(
 	private val sceneController: SceneController,
@@ -67,17 +66,29 @@ class DistanceModule(
 		}
 	}
 
+	private fun Position.distanceTo(position: Position): Float {
+		return kotlin.math.sqrt(
+			(this.x - position.x) * (this.x - position.x) +
+					(this.y - position.y) * (this.y - position.y)
+		)
+	}
+
 	override fun evaluateCondition(visualAsset: VisualAsset, condition: Condition): Boolean {
 		condition as DistanceCondition
 
-		if (!sceneController.hasAnchorNode(visualAsset))
+		if (!sceneController.hasParentNode(visualAsset))
 			return false
 		//TODO: Error log
 
-		val modelPose: Pose = sceneController.getAnchorNode(visualAsset)!!.anchor.pose
-		val cameraPose = sceneView.cameraNode.pose
+		val modelPosition = sceneController.getParentNode(visualAsset)!!.position
+		val cameraPosition = sceneView.cameraNode.pose?.position ?: return false
 
-		val distance : Float = cameraPose?.distanceTo(modelPose)?.absoluteValue ?: return false
+		val distance = modelPosition.distanceTo(cameraPosition)
+		//Log.d(TAG, "Distance: $distance (${visualAsset.id})")
+
+		condition.min?.let { if (distance < it) return false }
+		condition.max?.let { if (distance > it) return false }
+
 
 		/*
 		val distance : Float =
@@ -92,16 +103,7 @@ class DistanceModule(
 				else return false
 			)
 			.absoluteValue
-		 */
 
-		//Log.d(TAG, "Distance: $distance (${this.id})")
-
-
-		condition.min?.let { if (distance < it) return false }
-		condition.max?.let { if (distance > it) return false }
-
-
-		/*
 
 		// Smooth transitions; Avoid showing and hiding model repeatedly; Like a rubber band
 
@@ -120,7 +122,6 @@ class DistanceModule(
 		if (condition.max != null)
 			if (distance > (if (!this.isHidden) condition.max!! *(1+DEADZONE) else condition.max!! * (1-DEADZONE)))
 				return false
-
 		 */
 
 		return true
