@@ -17,6 +17,7 @@ import com.simplemobiletools.camera.ar.modules.PlaneTrackingModule
 import com.simplemobiletools.camera.ar.modules.SelectionModule
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.getDescription
+import io.github.sceneview.ar.node.ARCameraNode
 import io.github.sceneview.ar.node.AnchorNode
 import io.github.sceneview.ar.scene.PlaneRenderer
 import io.github.sceneview.node.Node
@@ -257,10 +258,10 @@ class SceneController(
 
 	// === Scene State Interface === //
 
-	fun addToScene(trackable: Trackable, anchor: com.google.ar.core.Anchor) = sceneState.addToScene(trackable, anchor)
 	fun getParentNode(anchor: Anchor): Node? = sceneState.getParentNode(anchor)
 	fun hasParentNode(visualAsset: VisualAsset): Boolean = sceneState.hasParentNode(visualAsset)
 	fun getParentNode(visualAsset: VisualAsset): Node? = sceneState.getParentNode(visualAsset)
+	fun setParentNode(trackable: Trackable, node: Node) = sceneState.setParentNode(trackable, node)
 	fun getFeature(visualAsset: VisualAsset): Feature = sceneState.getFeature(visualAsset)
 	fun getAnchor(visualAsset: VisualAsset): Anchor = sceneState.getAnchor(visualAsset)
 
@@ -316,6 +317,7 @@ class SceneController(
 	fun addRelativeNode(relativeTo: RelativeTo, other: Node) {
 		val newNode = when (other) {
 			is AnchorNode -> sceneState.addRelativeAnchorNode(relativeTo, other)
+			is ARCameraNode -> sceneState.addRelativeNodeToUser(relativeTo) //Should not get here
 			else -> sceneState.addRelativeNode(relativeTo, other)
 		}
 

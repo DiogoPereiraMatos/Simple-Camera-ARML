@@ -202,23 +202,6 @@ class SceneState(
 
 
 
-	fun addToScene(trackable: Trackable, anchor: com.google.ar.core.Anchor) {
-		val anchorNode = AnchorNode(sceneView.engine, anchor).apply {
-			transform(
-				position = Position(0f, 0f, 0f),
-				rotation = Rotation(0f, 0f, 0f),
-				scale = Size(1f, 1f, 1f)
-			)
-		}
-		setParentNode(trackable, anchorNode)
-		sceneView.addChildNode(anchorNode)
-	}
-
-	fun addToScene(trackable: Trackable, anchorNode: AnchorNode) {
-		setParentNode(trackable, anchorNode)
-		sceneView.addChildNode(anchorNode)
-	}
-
 	suspend fun attachModel(node: Node, model: Model, show: Boolean = true): ModelNode? {
 		//TODO: Confirm that this indeed fetches remote models
 		val modelInstance = sceneView.modelLoader.loadModelInstance(model.href) ?: return null
@@ -368,7 +351,7 @@ class SceneState(
 			}
 		}
 
-		val newAnchorNode = Node(sceneView.engine).apply {
+		val newNode = Node(sceneView.engine).apply {
 			isEditable = true
 			other.addChildNode(this)
 
@@ -378,12 +361,36 @@ class SceneState(
 				scale = Size(1f, 1f, 1f)
 			)
 		}
-		setParentNode(relativeTo, newAnchorNode)
+		setParentNode(relativeTo, newNode)
 
-		return newAnchorNode
+		return newNode
 	}
 
-	fun addRelativeNodeToUser(relativeTo: RelativeTo): Node = addRelativeNode(relativeTo, sceneView.cameraNode)
+	fun addRelativeNodeToUser(relativeTo: RelativeTo): Node {
+		val newPos = relativeTo.geometry.let {
+			when(it) {
+				is Point -> it.asVec3
+				else -> Position(0f,0f,0f)
+			}
+		}
+
+		val newNode = Node(sceneView.engine).apply {
+			isEditable = true
+
+			//FIXME: Don't know how multiple parents work... but ok
+			sceneView.addChildNode(this) // Camera node is not part of scene so ya have to do this. TODO: Add cameraNode to scene at start?
+			sceneView.cameraNode.addChildNode(this) // This makes it so Sceneview keeps track of the camera orientation, otherwise it leaves the assets where it created them.
+
+			transform(
+				position = newPos,
+				rotation = Rotation(0f, 0f, 0f),
+				scale = Size(1f, 1f, 1f)
+			)
+		}
+		setParentNode(relativeTo, newNode)
+
+		return newNode
+	}
 
 
 

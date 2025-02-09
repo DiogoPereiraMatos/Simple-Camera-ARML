@@ -1,5 +1,6 @@
 package com.simplemobiletools.camera.ar.modules
 
+import android.util.Log
 import com.simplemobiletools.camera.ar.SceneController
 import com.simplemobiletools.camera.ar.arml.elements.Condition
 import com.simplemobiletools.camera.ar.arml.elements.DistanceCondition
@@ -76,9 +77,10 @@ class DistanceModule(
 	override fun evaluateCondition(visualAsset: VisualAsset, condition: Condition): Boolean {
 		condition as DistanceCondition
 
-		if (!sceneController.hasParentNode(visualAsset))
+		if (!sceneController.hasParentNode(visualAsset)) {
+			Log.e(TAG, "No parent node for ${visualAsset.id}")
 			return false
-		//TODO: Error log
+		}
 
 		val modelPosition = sceneController.getParentNode(visualAsset)!!.position
 		val cameraPosition = sceneView.cameraNode.pose?.position ?: return false

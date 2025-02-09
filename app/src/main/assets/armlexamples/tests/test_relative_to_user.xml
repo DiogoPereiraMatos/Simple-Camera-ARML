@@ -1,0 +1,113 @@
+
+<arml xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<ARElements>
+		
+		<Model id="axisModel">
+			<href xlink:href="models/misc/XYZ.glb" />
+			<Scale>
+				<x>0.005</x>
+				<y>0.005</y>
+				<z>0.005</z>
+			</Scale>
+			<Orientation>
+				<roll>90</roll>
+			</Orientation>
+		</Model>
+
+		<Feature id="testFeature">
+			<anchors>
+
+				<RelativeTo id="nzAnchor">
+					<ref xlink:href="#user" />
+					<gml:Point id="nz" srsDimension="3">
+						<gml:pos>
+							0 0 -5
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<assetRef xlink:href="axisModel" />
+						<Model>
+							<href xlink:href="models/misc/Teapot.glb" />
+							<Scale>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
+							</Scale>
+						</Model>
+					</assets>
+				</RelativeTo>
+
+				<RelativeTo id="offsetAnchor1">
+					<ref xlink:href="nzAnchor" />
+					<gml:Point id="offset1" srsDimension="3">
+						<gml:pos>
+							0 0.5 0
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<assetRef xlink:href="axisModel" />
+						<Model>
+							<href xlink:href="models/misc/Teapot.glb" />
+							<Scale>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
+							</Scale>
+							<Orientation>
+								<tilt>90</tilt>
+							</Orientation>
+						</Model>
+					</assets>
+				</RelativeTo>
+
+				<RelativeTo id="offsetAnchor2">
+					<ref xlink:href="offsetAnchor1" />
+					<gml:Point id="offset2" srsDimension="3">
+						<gml:pos>
+							0 0.5 0
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<assetRef xlink:href="axisModel" />
+						<Model>
+							<href xlink:href="models/misc/Teapot.glb" />
+							<Scale>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
+							</Scale>
+							<Orientation>
+								<roll>90</roll>
+							</Orientation>
+						</Model>
+					</assets>
+				</RelativeTo>
+
+				<RelativeTo id="offsetAnchor3">
+					<ref xlink:href="offsetAnchor2" />
+					<gml:Point id="offset3" srsDimension="3">
+						<gml:pos>
+							0 0.5 0
+						</gml:pos>
+					</gml:Point>
+					<assets>
+						<assetRef xlink:href="axisModel" />
+						<Model>
+							<href xlink:href="models/misc/Teapot.glb" />
+							<Scale>
+								<x>0.05</x>
+								<y>0.05</y>
+								<z>0.05</z>
+							</Scale>
+							<Orientation>
+								<heading>90</heading>
+							</Orientation>
+						</Model>
+					</assets>
+				</RelativeTo>
+
+			</anchors>
+		</Feature>
+
+	</ARElements>
+</arml>

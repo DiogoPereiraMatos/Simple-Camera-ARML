@@ -9,6 +9,10 @@ import com.simplemobiletools.camera.ar.SceneController
 import com.simplemobiletools.camera.ar.arml.elements.Trackable
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
+import io.github.sceneview.ar.node.AnchorNode
+import io.github.sceneview.math.Position
+import io.github.sceneview.math.Rotation
+import io.github.sceneview.math.Size
 import java.util.EnumMap
 
 class PlaneTrackingModule(
@@ -111,8 +115,17 @@ class PlaneTrackingModule(
 			//TODO: Save extentX and extentY
 
 			for (trackable in waiting) {
-				// Create AnchorNode from google.Anchor, and associate it to Anchor (trackable) adding it to the scene
-				sceneController.addToScene(trackable, anchor)
+
+				// Create AnchorNode from google.Anchor, and associate it to Anchor (trackable), adding it to the scene
+				val anchorNode = AnchorNode(sceneView.engine, anchor).apply {
+					transform(
+						position = Position(0f, 0f, 0f),
+						rotation = Rotation(0f, 0f, 0f),
+						scale = Size(1f, 1f, 1f)
+					)
+				}
+				sceneController.setParentNode(trackable, anchorNode)
+				sceneView.addChildNode(anchorNode)
 				Log.d(TAG, "Assigned anchor to Trackable(id=${trackable.id})")
 
 				//TODO: Preload assets
