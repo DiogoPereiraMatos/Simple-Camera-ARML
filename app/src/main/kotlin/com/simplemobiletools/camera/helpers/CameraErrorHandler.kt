@@ -16,7 +16,7 @@ class CameraErrorHandler(
     fun handleCameraError(error: CameraState.StateError?) {
         when (error?.code) {
             CameraState.ERROR_MAX_CAMERAS_IN_USE,
-            CameraState.ERROR_CAMERA_IN_USE -> if (!context.config.isArmlEnabled) context.toast(R.string.camera_in_use_error, Toast.LENGTH_LONG)
+            CameraState.ERROR_CAMERA_IN_USE -> if (!context.config.forceARMode) context.toast(R.string.camera_in_use_error, Toast.LENGTH_LONG) //FIXME: Find a better way to handle AR mode
             CameraState.ERROR_CAMERA_FATAL_ERROR -> context.toast(R.string.camera_unavailable)
             CameraState.ERROR_STREAM_CONFIG -> context.toast(R.string.camera_configure_error)
             CameraState.ERROR_CAMERA_DISABLED -> context.toast(R.string.camera_disabled_by_admin_error)

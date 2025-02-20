@@ -25,7 +25,6 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.tabs.TabLayout
 import com.simplemobiletools.camera.BuildConfig
 import com.simplemobiletools.camera.R
-import com.simplemobiletools.camera.ar.qr.QRBoxView
 import com.simplemobiletools.camera.databinding.ActivityMainBinding
 import com.simplemobiletools.camera.extensions.config
 import com.simplemobiletools.camera.extensions.fadeIn
@@ -38,6 +37,7 @@ import com.simplemobiletools.camera.implementations.CameraXPreviewListener
 import com.simplemobiletools.camera.interfaces.MyPreview
 import com.simplemobiletools.camera.models.ResolutionOption
 import com.simplemobiletools.camera.models.TimerMode
+import com.simplemobiletools.camera.qr.QRBoxView
 import com.simplemobiletools.camera.views.FocusCircleView
 import com.simplemobiletools.commons.extensions.*
 import com.simplemobiletools.commons.helpers.*
@@ -92,7 +92,7 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
-		if (config.isArmlEnabled) {
+		if (config.forceARMode) {
 			launchARActivity()
 		}
 
@@ -126,7 +126,7 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
     override fun onResume() {
         super.onResume()
 
-        if (config.isArmlEnabled) {
+        if (config.forceARMode) {
 			launchARActivity()
 		}
 

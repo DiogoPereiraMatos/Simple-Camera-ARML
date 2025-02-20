@@ -41,8 +41,7 @@ class SelectionModule(
 			return
 
 		sceneView.setOnGestureListener(
-			//onDoubleTap = { _, _ -> ; },
-			onSingleTapConfirmed = { _, _ -> ; },
+			onSingleTapUp = { _, _ -> ; },
 		)
 
 		isEnabled = false

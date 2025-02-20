@@ -321,20 +321,20 @@
                 android:layout_height="match_parent"
                 android:orientation="vertical">
 
-                <RelativeLayout
-                    android:id="@+id/settings_arml_holder"
-                    style="@style/SettingsHolderCheckboxStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+				<RelativeLayout
+					android:id="@+id/settings_ar_holder_general"
+					style="@style/SettingsHolderTextViewStyle"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content">
 
-                    <com.simplemobiletools.commons.views.MyAppCompatCheckbox
-                        android:id="@+id/settings_arml"
-                        style="@style/SettingsCheckboxStyle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/arml" />
+					<com.simplemobiletools.commons.views.MyAppCompatCheckbox
+						android:id="@+id/settings_ar_forced"
+						style="@style/SettingsCheckboxStyle"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:text="@string/ar_force_mode" />
 
-                </RelativeLayout>
+				</RelativeLayout>
             </LinearLayout>
 
         </LinearLayout>

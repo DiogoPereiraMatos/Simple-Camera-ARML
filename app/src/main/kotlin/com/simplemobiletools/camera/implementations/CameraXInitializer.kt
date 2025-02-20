@@ -2,7 +2,7 @@ package com.simplemobiletools.camera.implementations
 
 import android.net.Uri
 import androidx.camera.view.PreviewView
-import com.simplemobiletools.camera.ar.qr.QRBoxView
+import com.simplemobiletools.camera.qr.QRBoxView
 import com.simplemobiletools.camera.helpers.CameraErrorHandler
 import com.simplemobiletools.camera.helpers.MediaOutputHelper
 import com.simplemobiletools.camera.helpers.MediaSoundHelper

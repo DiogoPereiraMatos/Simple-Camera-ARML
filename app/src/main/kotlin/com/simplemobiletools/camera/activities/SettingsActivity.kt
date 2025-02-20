@@ -12,12 +12,18 @@ import com.simplemobiletools.camera.databinding.ActivitySettingsBinding
 import com.simplemobiletools.camera.extensions.checkLocationPermission
 import com.simplemobiletools.camera.extensions.config
 import com.simplemobiletools.camera.models.CaptureMode
-import com.simplemobiletools.commons.dialogs.*
+import com.simplemobiletools.commons.dialogs.FeatureLockedDialog
+import com.simplemobiletools.commons.dialogs.FilePickerDialog
+import com.simplemobiletools.commons.dialogs.OpenDeviceSettingsDialog
+import com.simplemobiletools.commons.dialogs.RadioGroupDialog
 import com.simplemobiletools.commons.extensions.*
-import com.simplemobiletools.commons.helpers.*
+import com.simplemobiletools.commons.helpers.LICENSE_GLIDE
+import com.simplemobiletools.commons.helpers.NavigationIcon
+import com.simplemobiletools.commons.helpers.PERMISSION_ACCESS_FINE_LOCATION
+import com.simplemobiletools.commons.helpers.isTiramisuPlus
 import com.simplemobiletools.commons.models.FAQItem
 import com.simplemobiletools.commons.models.RadioItem
-import java.util.*
+import java.util.Locale
 import kotlin.system.exitProcess
 
 class SettingsActivity : SimpleActivity() {
@@ -273,21 +279,21 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun setupAR() = binding.apply {
-        settingsArmlHolder.beGoneIf(ArCoreApk.getInstance().checkAvailability(applicationContext).isUnsupported)
+        settingsArHolder.beGoneIf(ArCoreApk.getInstance().checkAvailability(applicationContext).isUnsupported)
 
         listOf(settingsArHolder, settingsArLabel).forEach {
-            it.beGoneIf(settingsArmlHolder.isGone())
+            it.beGoneIf(settingsArHolder.isGone())
         }
 
-        settingsArml.isChecked = config.isArmlEnabled
-        settingsArmlHolder.setOnClickListener {
-            if (settingsArml.isChecked) {
-                settingsArml.toggle()
+        settingsArForced.isChecked = config.forceARMode
+        settingsArHolder.setOnClickListener {
+            if (settingsArForced.isChecked) {
+				settingsArForced.toggle()
             } else {
                 if (tryInstallARCore())
-                    settingsArml.toggle()
+					settingsArForced.toggle()
             }
-            config.isArmlEnabled = settingsArml.isChecked
+            config.forceARMode = settingsArForced.isChecked
         }
     }
 

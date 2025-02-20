@@ -98,9 +98,8 @@ dependencies {
 
 	// QR reading
 	implementation(libs.barcode.scanning)
-	implementation(libs.zxing.core)
 
-	// XML/ARML Parser
+	// XML Parser
 	implementation(libs.simple.xml)
 	implementation(libs.junit.v412)
 

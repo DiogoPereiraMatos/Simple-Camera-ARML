@@ -1,8 +1,7 @@
-package com.simplemobiletools.camera.ar.qr
+package com.simplemobiletools.camera.qr
 
 import android.content.Context
 import android.graphics.*
-import android.os.Handler
 import android.view.ViewGroup
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.simplemobiletools.commons.extensions.getProperPrimaryColor
@@ -20,22 +19,20 @@ class QRBoxView(context: Context) : ViewGroup(context) {
 	private var mCornerPaint : Paint
 
 	private var mDrawBox = false
-	private var mHandler: Handler
 	private var mBoxTimeout = 1000L
 
 	init {
 		setWillNotDraw(false)
-		mHandler = Handler()
 		mBoxPaint = Paint().apply {
 			style = Paint.Style.STROKE
 			color = context.getProperPrimaryColor()
-			strokeWidth = 10f
+			strokeWidth = 7.5f
 		}
 		mTextPaint = Paint().apply {
 			style = Paint.Style.STROKE
 			color = context.getProperPrimaryColor()
-			strokeWidth = 2f
-			textSize = 20f
+			strokeWidth = 1.5f
+			textSize = 15f
 		}
 		mCornerPaint = Paint().apply {
 			style = Paint.Style.STROKE
@@ -78,9 +75,9 @@ class QRBoxView(context: Context) : ViewGroup(context) {
 	}
 
 	fun showBox() {
-		mHandler.removeCallbacksAndMessages(null)
+		removeCallbacks(null)
 		toggleBox(true)
-		mHandler.postDelayed({
+		postDelayed({
 			toggleBox(false)
 		}, mBoxTimeout)
 	}
