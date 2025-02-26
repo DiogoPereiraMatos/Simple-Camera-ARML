@@ -2,8 +2,6 @@ package com.simplemobiletools.camera.qr
 
 import android.content.Intent
 import android.util.Log
-import androidx.annotation.OptIn
-import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
@@ -48,30 +46,26 @@ class CameraXAnalyzer(
 	    Log.d(TAG, "init")
 	}
 
-	@OptIn(ExperimentalGetImage::class) override fun analyze(imageProxy: ImageProxy) {
-		imageProxy.image?.let {
+	override fun analyze(imageProxy: ImageProxy) {
+		val image = InputImage.fromBitmap(imageProxy.toBitmap(), imageProxy.imageInfo.rotationDegrees)
 
-			val image1 = InputImage.fromBitmap(imageProxy.toBitmap(), imageProxy.imageInfo.rotationDegrees)
-			val image = InputImage.fromMediaImage(it, imageProxy.imageInfo.rotationDegrees)
-
-			scanner.process(image)
-				.addOnSuccessListener { barcodes ->
-					// Task completed successfully
-					if (barcodes.isEmpty()) {
-						//view.toggleBox(false)
-					} else {
-						Log.d(TAG, "Found ${barcodes.size} barcodes")
-						view.drawQRBox(barcodes.first(), image.width, image.height) //FIXME: Only draws the first for now
-						processBarcodes(barcodes)
-					}
+		scanner.process(image)
+			.addOnSuccessListener { barcodes ->
+				// Task completed successfully
+				if (barcodes.isEmpty()) {
+					//view.toggleBox(false)
+				} else {
+					Log.d(TAG, "Found ${barcodes.size} barcodes")
+					view.drawQRBox(barcodes.first(), image.width, image.height) //FIXME: Only draws the first for now
+					processBarcodes(barcodes)
 				}
-				.addOnFailureListener {
-					Log.e(TAG, "Error scanning barcode", it)
-				}
-				.addOnCompleteListener {
-					imageProxy.close()
-				}
-		}
+			}
+			.addOnFailureListener {
+				Log.e(TAG, "Error scanning barcode", it)
+			}
+			.addOnCompleteListener {
+				imageProxy.close()
+			}
 	}
 
 	private fun processBarcodes(barcodes : List<Barcode>) {
