@@ -43,7 +43,17 @@ class CameraXAnalyzer(
 	private val scanner = BarcodeScanning.getClient(options)
 
 	init {
-	    Log.d(TAG, "init")
+	    Log.d(TAG, "Init camera analyzer.")
+	}
+
+	fun onQRClick(xPos: Float, yPos: Float): Boolean {
+		val qrCode: Barcode? = view.detectClick(xPos, yPos)
+		if (qrCode != null) {
+			Log.d(TAG, "QR code clicked: ${qrCode.displayValue}")
+			processBarcode(qrCode)
+			return true
+		}
+		return false
 	}
 
 	override fun analyze(imageProxy: ImageProxy) {
@@ -55,9 +65,12 @@ class CameraXAnalyzer(
 				if (barcodes.isEmpty()) {
 					//view.toggleBox(false)
 				} else {
-					Log.d(TAG, "Found ${barcodes.size} barcodes")
+					//Log.d(TAG, "Found ${barcodes.size} barcodes")
+					if (!execute) {
+						//Log.d(TAG, "Ignoring...")
+						return@addOnSuccessListener
+					}
 					view.drawQRBox(barcodes.first(), image.width, image.height) //FIXME: Only draws the first for now
-					processBarcodes(barcodes)
 				}
 			}
 			.addOnFailureListener {
@@ -68,18 +81,11 @@ class CameraXAnalyzer(
 			}
 	}
 
-	private fun processBarcodes(barcodes : List<Barcode>) {
-		if (!execute) {
-			Log.d(TAG, "Ignoring...")
-			return
-		}
-
-		for (barcode in barcodes) {
-			barcodeTypeHandlers.getOrElse(barcode.valueType) {
-				Log.w(TAG, "Got a barcode of type ${barcode.valueType}: ${barcode.rawValue}. That type is not supported yet. Ignoring...")
-				null
-			}?.invoke(barcode)
-		}
+	fun processBarcode(barcode : Barcode) {
+		barcodeTypeHandlers.getOrElse(barcode.valueType) {
+			Log.w(TAG, "Got a barcode of type ${barcode.valueType}: ${barcode.rawValue}. That type is not supported yet. Ignoring...")
+			null
+		}?.invoke(barcode)
 	}
 
 	private fun handleURL(barcode : Barcode) {

@@ -65,6 +65,7 @@ class CameraXPreview(
     private val videoQualityManager = VideoQualityManager(activity)
     private val imageQualityManager = ImageQualityManager(activity)
     private val mediaSizeStore = MediaSizeStore(config)
+	private val analyzer = CameraXAnalyzer(activity, mQRBoxView)
 
     private val orientationEventListener = object : OrientationEventListener(activity, SensorManager.SENSOR_DELAY_NORMAL) {
         @SuppressLint("RestrictedApi")
@@ -174,9 +175,10 @@ class CameraXPreview(
 
         val previewUseCase = buildPreview(rotatedResolution, rotation)
         val captureUseCase = getCaptureUseCase(rotatedResolution, rotation)
+
         val analyzeUseCase = ImageAnalysis.Builder()
 			.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-			.build().also { it.setAnalyzer(mainExecutor, CameraXAnalyzer(activity, mQRBoxView)) }
+			.build().also { it.setAnalyzer(mainExecutor, analyzer) }
 
         cameraProvider.unbindAll()
         camera = if (isFullSize) {
@@ -343,7 +345,17 @@ class CameraXPreview(
                 } ?: false
             }
         })
+
+		val qrClickDetector = GestureDetector(activity, object : SimpleOnGestureListener() {
+			override fun onSingleTapUp(event: MotionEvent): Boolean {
+				return analyzer.onQRClick(event.x, event.y)
+			}
+		})
+
         previewView.setOnTouchListener { _, event ->
+			if (qrClickDetector.onTouchEvent(event))
+				return@setOnTouchListener true
+
             val handledGesture = gestureDetector.onTouchEvent(event)
             val handledScaleGesture = scaleGesture?.onTouchEvent(event)
             handledGesture || handledScaleGesture ?: false

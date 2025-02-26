@@ -15,7 +15,7 @@ class CameraErrorHandler(
     fun handleCameraError(error: CameraState.StateError?) {
         when (error?.code) {
             CameraState.ERROR_MAX_CAMERAS_IN_USE,
-            CameraState.ERROR_CAMERA_IN_USE -> {} //context.toast(R.string.camera_in_use_error, Toast.LENGTH_LONG) //FIXME: Showed up when changing to AR. Find a better way to handle this
+            CameraState.ERROR_CAMERA_IN_USE -> {} //context.toast(R.string.camera_in_use_error, Toast.LENGTH_LONG) //FIXME: Showed up when changing to AR. Find a better way to handle this. Called on CameraXPreview's setupCameraObservers
             CameraState.ERROR_CAMERA_FATAL_ERROR -> context.toast(R.string.camera_unavailable)
             CameraState.ERROR_STREAM_CONFIG -> context.toast(R.string.camera_configure_error)
             CameraState.ERROR_CAMERA_DISABLED -> context.toast(R.string.camera_disabled_by_admin_error)
