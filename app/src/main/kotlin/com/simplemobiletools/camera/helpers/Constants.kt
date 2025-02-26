@@ -23,8 +23,6 @@ const val PHOTO_QUALITY = "photo_quality"
 const val CAPTURE_MODE = "capture_mode"
 const val TIMER_MODE = "timer_mode"
 
-const val AR_FORCED = "ar_forced"
-
 const val FLASH_OFF = 0
 const val FLASH_ON = 1
 const val FLASH_AUTO = 2

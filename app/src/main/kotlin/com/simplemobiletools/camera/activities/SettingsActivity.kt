@@ -1,6 +1,7 @@
 package com.simplemobiletools.camera.activities
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -279,21 +280,15 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun setupAR() = binding.apply {
-        settingsArHolder.beGoneIf(ArCoreApk.getInstance().checkAvailability(applicationContext).isUnsupported)
+        settingsArForceButtonHolder.beGoneIf(ArCoreApk.getInstance().checkAvailability(applicationContext).isUnsupported)
 
-        listOf(settingsArHolder, settingsArLabel).forEach {
-            it.beGoneIf(settingsArHolder.isGone())
+        listOf(settingsArForceButton, settingsArLabel).forEach {
+            it.beGoneIf(settingsArForceButtonHolder.isGone())
         }
 
-        settingsArForced.isChecked = config.forceARMode
-        settingsArHolder.setOnClickListener {
-            if (settingsArForced.isChecked) {
-				settingsArForced.toggle()
-            } else {
-                if (tryInstallARCore())
-					settingsArForced.toggle()
-            }
-            config.forceARMode = settingsArForced.isChecked
+        settingsArForceButtonHolder.setOnClickListener {
+			tryInstallARCore()
+			launchARActivity()
         }
     }
 
@@ -326,4 +321,10 @@ class SettingsActivity : SimpleActivity() {
             return false
         }
     }
+
+	private fun launchARActivity() {
+		Intent(applicationContext, SceneviewActivity::class.java).also {
+			startActivity(it)
+		}
+	}
 }

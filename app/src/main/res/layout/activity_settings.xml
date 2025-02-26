@@ -315,27 +315,22 @@
                 android:layout_height="wrap_content"
                 android:text="@string/ar_label" />
 
-            <LinearLayout
-                android:id="@+id/settings_ar_holder"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
+			<androidx.constraintlayout.widget.ConstraintLayout
+				android:id="@+id/settings_ar_force_button_holder"
+				style="@style/SettingsHolderTextViewOneLinerStyle"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content">
 
-				<RelativeLayout
-					android:id="@+id/settings_ar_holder_general"
-					style="@style/SettingsHolderTextViewStyle"
-					android:layout_width="match_parent"
-					android:layout_height="wrap_content">
+				<com.simplemobiletools.commons.views.MyTextView
+					android:id="@+id/settings_ar_force_button"
+					style="@style/SettingsTextLabelStyle"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					android:text="@string/ar_force_mode"
+					app:layout_constraintStart_toStartOf="parent"
+					app:layout_constraintTop_toTopOf="parent" />
 
-					<com.simplemobiletools.commons.views.MyAppCompatCheckbox
-						android:id="@+id/settings_ar_forced"
-						style="@style/SettingsCheckboxStyle"
-						android:layout_width="match_parent"
-						android:layout_height="wrap_content"
-						android:text="@string/ar_force_mode" />
-
-				</RelativeLayout>
-            </LinearLayout>
+			</androidx.constraintlayout.widget.ConstraintLayout>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

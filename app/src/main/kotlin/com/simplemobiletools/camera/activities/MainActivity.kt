@@ -91,11 +91,6 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
-		if (config.forceARMode) {
-			launchARActivity()
-		}
-
         useDynamicTheme = false
         super.onCreate(savedInstanceState)
         appLaunched(BuildConfig.APPLICATION_ID)
@@ -125,10 +120,6 @@ class MainActivity : SimpleActivity(), PhotoProcessor.MediaSavedListener, Camera
 
     override fun onResume() {
         super.onResume()
-
-        if (config.forceARMode) {
-			launchARActivity()
-		}
 
         if (hasStorageAndCameraPermissions()) {
             val isInPhotoMode = isInPhotoMode()

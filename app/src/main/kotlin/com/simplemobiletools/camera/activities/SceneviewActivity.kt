@@ -57,10 +57,6 @@ class SceneviewActivity : SimpleActivity() {
 
 	override fun onResume() {
 		super.onResume()
-		if (!this.projectConfig.forceARMode && intent.getStringExtra(Intent.EXTRA_TEXT) == null) {
-			sceneController.stop()
-			this.finish()
-		}
 
 		window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 		window.navigationBarColor = ContextCompat.getColor(this, android.R.color.transparent)

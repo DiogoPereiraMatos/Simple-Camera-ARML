@@ -83,8 +83,4 @@ class Config(context: Context) : BaseConfig(context) {
     var timerMode: TimerMode
         get() = TimerMode.values().getOrNull(prefs.getInt(TIMER_MODE, TimerMode.OFF.ordinal)) ?: TimerMode.OFF
         set(timerMode) = prefs.edit().putInt(TIMER_MODE, timerMode.ordinal).apply()
-
-    var forceARMode: Boolean
-        get() = prefs.getBoolean(AR_FORCED, false)
-        set(value) = prefs.edit().putBoolean(AR_FORCED, value).apply()
 }

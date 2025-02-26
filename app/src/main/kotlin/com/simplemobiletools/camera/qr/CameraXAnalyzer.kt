@@ -11,13 +11,30 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import com.simplemobiletools.camera.activities.SceneviewActivity
-import com.simplemobiletools.camera.extensions.config
 import com.simplemobiletools.commons.activities.BaseSimpleActivity
 
 class CameraXAnalyzer(
 	val context : BaseSimpleActivity,
 	val view : QRBoxView
 ) : ImageAnalysis.Analyzer {
+
+	companion object {
+		private const val TAG = "CameraXAnalyzer"
+	}
+
+	// See API reference for complete list of supported types
+	private val barcodeTypeHandlers : HashMap<Int, (Barcode) -> Unit> = HashMap(
+		mapOf(
+			Pair(Barcode.TYPE_TEXT) { barcode -> handleText(barcode) },
+			Pair(Barcode.TYPE_URL) { barcode -> handleURL(barcode) },
+			Pair(Barcode.TYPE_WIFI) { barcode -> handleWifi(barcode) },
+		)
+	)
+	private val textExtensionHandlers : HashMap<String, (Barcode, String) -> Unit> = HashMap(
+		mapOf(
+			Pair("arml") { barcode, url -> handleARML(barcode, url) },
+		)
+	)
 
 	private val options = BarcodeScannerOptions.Builder()
 		.setBarcodeFormats(
@@ -28,76 +45,81 @@ class CameraXAnalyzer(
 	private val scanner = BarcodeScanning.getClient(options)
 
 	init {
-	    Log.d("CameraXAnalyzer", "init")
+	    Log.d(TAG, "init")
 	}
 
 	@OptIn(ExperimentalGetImage::class) override fun analyze(imageProxy: ImageProxy) {
-		Log.d("test_CameraXAnalyzer", "searching...")
+		imageProxy.image?.let {
 
-		val mediaImage = imageProxy.image
-		if (mediaImage != null) {
-			val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+			val image1 = InputImage.fromBitmap(imageProxy.toBitmap(), imageProxy.imageInfo.rotationDegrees)
+			val image = InputImage.fromMediaImage(it, imageProxy.imageInfo.rotationDegrees)
 
 			scanner.process(image)
 				.addOnSuccessListener { barcodes ->
 					// Task completed successfully
 					if (barcodes.isEmpty()) {
-						Log.d("test_CameraXAnalyzer", "No barcodes found")
 						//view.toggleBox(false)
 					} else {
-						Log.d("CameraXAnalyzer", "Found ${barcodes.size} barcodes")
+						Log.d(TAG, "Found ${barcodes.size} barcodes")
 						view.drawQRBox(barcodes.first(), image.width, image.height) //FIXME: Only draws the first for now
 						processBarcodes(barcodes)
 					}
 				}
 				.addOnFailureListener {
-					Log.e("CameraXAnalyzer", "Error scanning barcode", it)
+					Log.e(TAG, "Error scanning barcode", it)
 				}
 				.addOnCompleteListener {
 					imageProxy.close()
-					Log.d("test_CameraXAnalyzer", "Image closed.")
 				}
 		}
 	}
 
 	private fun processBarcodes(barcodes : List<Barcode>) {
 		if (!execute) {
-			Log.d("CameraXAnalyzer", "Ignoring...")
+			Log.d(TAG, "Ignoring...")
 			return
 		}
 
 		for (barcode in barcodes) {
-
-			// See API reference for complete list of supported types
-			when (barcode.valueType) {
-				Barcode.TYPE_WIFI -> {
-					val ssid = barcode.wifi!!.ssid
-					val password = barcode.wifi!!.password
-					val type = barcode.wifi!!.encryptionType
-					Log.d("CameraXAnalyzer", "WIFI: $ssid; $password; $type")
-				}
-				Barcode.TYPE_URL -> {
-					val title = barcode.url!!.title
-					val url = barcode.url!!.url
-					Log.d("CameraXAnalyzer", "URL: $title; $url")
-				}
-				Barcode.TYPE_TEXT -> {
-					val rawValue = barcode.rawValue
-
-					if (rawValue?.startsWith("arml://", ignoreCase = true) == true) {
-						val url = rawValue.substringAfter("arml://")
-						Log.d("CameraXAnalyzer", "ARML: $url")
-						launchARActivity(url)
-					} else {
-						Log.d("CameraXAnalyzer", "TEXT: $rawValue")
-					}
-				}
-				else -> {
-					val rawValue = barcode.rawValue
-					Log.d("CameraXAnalyzer", "UNKNOWN: $rawValue")
-				}
-			}
+			barcodeTypeHandlers.getOrElse(barcode.valueType) {
+				Log.w(TAG, "Got a barcode of type ${barcode.valueType}: ${barcode.rawValue}. That type is not supported yet. Ignoring...")
+				null
+			}?.invoke(barcode)
 		}
+	}
+
+	private fun handleURL(barcode : Barcode) {
+		val title = barcode.url!!.title
+		val url = barcode.url!!.url
+		Log.d(TAG, "URL: $title; $url")
+	}
+
+	private fun handleWifi(barcode : Barcode) {
+		val ssid = barcode.wifi!!.ssid
+		val password = barcode.wifi!!.password
+		val type = barcode.wifi!!.encryptionType
+		Log.d(TAG, "WIFI: $ssid; $password; $type")
+	}
+
+	private fun handleText(barcode : Barcode) {
+		val rawValue = barcode.rawValue
+		if (rawValue == null) {
+			Log.w(TAG, "Got a barcode with no raw value. Ignoring...")
+			return
+		}
+
+		val prefix = rawValue.substringBefore("://")
+		val url = rawValue.substringAfter("://")
+
+		textExtensionHandlers.getOrElse(prefix) {
+			Log.w(TAG, "Got TEXT barcode: $rawValue. Don't know what to do with that. Ignoring...")
+			null
+		}?.invoke(barcode, url)
+	}
+
+	private fun handleARML(barcode : Barcode, url : String) {
+		Log.d(TAG, "ARML: $url")
+		launchARActivity(url)
 	}
 
 	private var execute : Boolean = true
@@ -105,8 +127,6 @@ class CameraXAnalyzer(
 		if (!execute)
 			return
 
-		//FIXME: This is a hack to force AR mode and disable error toast. Handle this better
-		context.config.forceARMode = true
 		execute = false
 		val intent = Intent(context, SceneviewActivity::class.java)
 		intent.putExtra(Intent.EXTRA_TEXT, armlPath)
