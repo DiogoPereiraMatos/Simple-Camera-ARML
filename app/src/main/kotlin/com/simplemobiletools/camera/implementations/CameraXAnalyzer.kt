@@ -1,4 +1,4 @@
-package com.simplemobiletools.camera.qr
+package com.simplemobiletools.camera.implementations
 
 import android.content.Intent
 import android.util.Log
@@ -9,6 +9,7 @@ import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import com.simplemobiletools.camera.activities.SceneviewActivity
+import com.simplemobiletools.camera.views.QRBoxView
 import com.simplemobiletools.commons.activities.BaseSimpleActivity
 
 class CameraXAnalyzer(
@@ -34,16 +35,15 @@ class CameraXAnalyzer(
 		)
 	)
 
-	private val options = BarcodeScannerOptions.Builder()
+	private val scanner = BarcodeScanning.getClient(BarcodeScannerOptions.Builder()
 		.setBarcodeFormats(
 			Barcode.FORMAT_QR_CODE,
-			)
+		)
 		.build()
-
-	private val scanner = BarcodeScanning.getClient(options)
+	)
 
 	init {
-	    Log.d(TAG, "Init camera analyzer.")
+	    Log.d(TAG, "Camera analyzer initialized.")
 	}
 
 	fun onQRClick(xPos: Float, yPos: Float): Boolean {
@@ -62,19 +62,9 @@ class CameraXAnalyzer(
 		scanner.process(image)
 			.addOnSuccessListener { barcodes ->
 				// Task completed successfully
-				if (barcodes.isEmpty()) {
-					//view.toggleBox(false)
-				} else {
-					//Log.d(TAG, "Found ${barcodes.size} barcodes")
-					if (!execute) {
-						//Log.d(TAG, "Ignoring...")
-						return@addOnSuccessListener
-					}
-					view.drawQRBox(barcodes.first(), image.width, image.height) //FIXME: Only draws the first for now
+				if (barcodes.isNotEmpty()) {
+					view.drawQRBoxes(barcodes, image.width, image.height)
 				}
-			}
-			.addOnFailureListener {
-				Log.e(TAG, "Error scanning barcode", it)
 			}
 			.addOnCompleteListener {
 				imageProxy.close()
@@ -122,12 +112,7 @@ class CameraXAnalyzer(
 		launchARActivity(url)
 	}
 
-	private var execute : Boolean = true
 	private fun launchARActivity(armlPath : String) {
-		if (!execute)
-			return
-
-		execute = false
 		val intent = Intent(context, SceneviewActivity::class.java)
 		intent.putExtra(Intent.EXTRA_TEXT, armlPath)
 		context.startActivity(intent)

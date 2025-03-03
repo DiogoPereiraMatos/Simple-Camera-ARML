@@ -31,8 +31,7 @@ import com.simplemobiletools.camera.models.CaptureMode
 import com.simplemobiletools.camera.models.MediaOutput
 import com.simplemobiletools.camera.models.MySize
 import com.simplemobiletools.camera.models.ResolutionOption
-import com.simplemobiletools.camera.qr.CameraXAnalyzer
-import com.simplemobiletools.camera.qr.QRBoxView
+import com.simplemobiletools.camera.views.QRBoxView
 import com.simplemobiletools.commons.activities.BaseSimpleActivity
 import com.simplemobiletools.commons.extensions.toast
 import com.simplemobiletools.commons.helpers.PERMISSION_ACCESS_FINE_LOCATION

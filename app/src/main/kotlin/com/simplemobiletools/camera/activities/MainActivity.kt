@@ -37,7 +37,7 @@ import com.simplemobiletools.camera.implementations.CameraXPreviewListener
 import com.simplemobiletools.camera.interfaces.MyPreview
 import com.simplemobiletools.camera.models.ResolutionOption
 import com.simplemobiletools.camera.models.TimerMode
-import com.simplemobiletools.camera.qr.QRBoxView
+import com.simplemobiletools.camera.views.QRBoxView
 import com.simplemobiletools.camera.views.FocusCircleView
 import com.simplemobiletools.commons.extensions.*
 import com.simplemobiletools.commons.helpers.*
