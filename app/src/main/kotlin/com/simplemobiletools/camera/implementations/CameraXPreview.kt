@@ -6,6 +6,7 @@ import android.hardware.SensorManager
 import android.hardware.display.DisplayManager
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.util.Rational
 import android.util.Size
 import android.view.*
@@ -23,6 +24,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.window.layout.WindowMetricsCalculator
 import com.bumptech.glide.load.ImageHeaderParser.UNKNOWN_ORIENTATION
+import com.google.mlkit.vision.barcode.common.Barcode
 import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.extensions.*
 import com.simplemobiletools.camera.helpers.*
@@ -47,7 +49,7 @@ class CameraXPreview(
     private val isThirdPartyIntent: Boolean,
     initInPhotoMode: Boolean,
 	private val mQRBoxView: QRBoxView
-) : MyPreview, DefaultLifecycleObserver {
+) : MyPreview, DefaultLifecycleObserver, CameraXAnalyzerListener {
 
     companion object {
         // Auto focus is 1/6 of the area.
@@ -64,7 +66,7 @@ class CameraXPreview(
     private val videoQualityManager = VideoQualityManager(activity)
     private val imageQualityManager = ImageQualityManager(activity)
     private val mediaSizeStore = MediaSizeStore(config)
-	private val analyzer = CameraXAnalyzer(activity, mQRBoxView)
+	private val analyzer = CameraXAnalyzer(activity, this)
 
     private val orientationEventListener = object : OrientationEventListener(activity, SensorManager.SENSOR_DELAY_NORMAL) {
         @SuppressLint("RestrictedApi")
@@ -347,7 +349,7 @@ class CameraXPreview(
 
 		val qrClickDetector = GestureDetector(activity, object : SimpleOnGestureListener() {
 			override fun onSingleTapUp(event: MotionEvent): Boolean {
-				return analyzer.onQRClick(event.x, event.y)
+				return onQRClick(event.x, event.y)
 			}
 		})
 
@@ -360,6 +362,22 @@ class CameraXPreview(
             handledGesture || handledScaleGesture ?: false
         }
     }
+
+	private val qrCodeHandler = QRCodeHandler(activity)
+
+	override fun onQRCodesDetected(barcodes: List<Barcode>, imageWidth: Int, imageHeight: Int) {
+		mQRBoxView.drawQRBoxes(barcodes, imageWidth, imageHeight)
+	}
+
+	fun onQRClick(xPos: Float, yPos: Float): Boolean {
+		val qrCode: Barcode? = mQRBoxView.detectClick(xPos, yPos)
+		if (qrCode != null) {
+			Log.d("CameraXPreview", "QR code clicked: ${qrCode.displayValue}")
+			qrCodeHandler.processBarcode(qrCode)
+			return true
+		}
+		return false
+	}
 
     override fun onStart(owner: LifecycleOwner) {
         orientationEventListener.enable()
