@@ -6,6 +6,7 @@ import com.google.ar.core.*
 import com.simplemobiletools.camera.ar.SceneController
 import com.simplemobiletools.camera.ar.arml.elements.Trackable
 import com.simplemobiletools.camera.ar.arml.elements.TrackableConfig
+import com.simplemobiletools.camera.extensions.putIfAbsent
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.getUpdatedAugmentedImages
 import io.github.sceneview.ar.node.AnchorNode

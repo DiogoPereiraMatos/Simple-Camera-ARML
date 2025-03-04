@@ -13,13 +13,14 @@ import com.simplemobiletools.camera.R
 import com.simplemobiletools.camera.ar.SceneController
 import com.simplemobiletools.camera.databinding.ActivitySceneviewBinding
 import com.simplemobiletools.camera.extensions.config
+import com.simplemobiletools.camera.extensions.listFilesInDirectory
 import com.simplemobiletools.commons.extensions.viewBinding
 
 
 class SceneviewActivity : SimpleActivity() {
 
 	// Log filter:
-	// package:mine tag~:^CameraX.* | tag~:ARML | tag~:SCENE.* | tag~:.*MODULE | (level:error & -message:motion_tracking_context & -message:static_feature_frame_selector & -message:hit_test & -message:vio_initializer)
+	// package:mine tag~:^CameraX.* | tag~:^QR.* | tag~:ARML | tag~:SCENE.* | tag~:.*MODULE | (level:error & -message:motion_tracking_context & -message:static_feature_frame_selector & -message:hit_test & -message:vio_initializer)
 
 	companion object {
 		const val TAG = "SCENE_ACTIVITY"
@@ -116,7 +117,7 @@ class SceneviewActivity : SimpleActivity() {
 	}
 
 	private fun launchARMLSettingsMenuDialog() {
-		val strings : Array<String> = projectAssets.listAssets("armlexamples")?.toTypedArray() ?: Array(0) {null.toString()}
+		val strings : Array<String> = projectAssets.listFilesInDirectory("armlexamples")?.toTypedArray() ?: Array(0) {null.toString()}
 
 		AlertDialog.Builder(this)
 			.setTitle("ARML")

@@ -7,6 +7,7 @@ import com.google.ar.core.Plane
 import com.google.ar.core.TrackingState
 import com.simplemobiletools.camera.ar.SceneController
 import com.simplemobiletools.camera.ar.arml.elements.Trackable
+import com.simplemobiletools.camera.extensions.putIfAbsent
 import io.github.sceneview.ar.ARSceneView
 import io.github.sceneview.ar.arcore.getUpdatedPlanes
 import io.github.sceneview.ar.node.AnchorNode

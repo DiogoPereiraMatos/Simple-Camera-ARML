@@ -1,17 +1,15 @@
-package com.simplemobiletools.camera.ar
+package com.simplemobiletools.camera.extensions
 
 import android.content.res.AssetManager
-import com.simplemobiletools.camera.ar.arml.elements.Trackable
 
-
-fun AssetManager.listAssets(path: String): ArrayList<String>? {
+fun AssetManager.listFilesInDirectory(path: String): ArrayList<String>? {
 	val fileOrFolder = this.list(path) ?: return null
 	if (fileOrFolder.isEmpty())
 		return null
 
 	val allAssets = ArrayList<String>()
 	for (f in fileOrFolder) {
-		val recursive = this.listAssets("$path/$f")
+		val recursive = this.listFilesInDirectory("$path/$f")
 		if (recursive != null) {
 			// is folder
 			allAssets.addAll(recursive)
@@ -21,10 +19,4 @@ fun AssetManager.listAssets(path: String): ArrayList<String>? {
 		}
 	}
 	return allAssets
-}
-
-fun ArrayList<Trackable>.putIfAbsent(element: Trackable) {
-	if (!this.contains(element)) {
-		this.add(element)
-	}
 }
