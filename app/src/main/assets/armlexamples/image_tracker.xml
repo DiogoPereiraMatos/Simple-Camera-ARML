@@ -7,8 +7,19 @@
 				<Trackable id="centreAnchor">
 					<config>
 						<tracker xlink:href="#genericImageTracker" />
-						<src>good_images/earth.jpg</src>
+						<src>images/trackable/earth.jpg</src>
 					</config>
+					<assets>
+					</assets>
+				</Trackable>
+
+				<RelativeTo id="modelAnchor">
+					<ref xlink:href="centreAnchor" />
+					<gml:Point id="modelOffset" srsDimension="3">
+						<gml:pos>
+							0 0.1 0
+						</gml:pos>
+					</gml:Point>
 					<assets>
 						<Model id="earthModel">
 							<href xlink:href="models/Earth/Earth.gltf" />
@@ -19,7 +30,7 @@
 							</Scale>
 						</Model>
 					</assets>
-				</Trackable>
+				</RelativeTo>
 			</anchors>
 		</Feature>
 	</ARElements>

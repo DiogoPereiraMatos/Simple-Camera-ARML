@@ -53,10 +53,6 @@ class Label : VisualAsset2D {
 		return SUCCESS
 	}
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions,width=\"$width\",height=\"$height\",orientationMode=\"$orientationMode\",backside=\"$backside\",href=\"$href\",src=\"$src\",hyperlinkBehavior=\"$hyperlinkBehavior\",viewportWidth=$viewportWidth)"
-	}
-
 
 	internal constructor(root: ARML, base: LowLevelLabel) : super(root, base) {
 		this.href = base.href?.href

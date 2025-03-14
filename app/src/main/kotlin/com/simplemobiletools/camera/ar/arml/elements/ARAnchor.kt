@@ -17,7 +17,8 @@ abstract class ARAnchor : Anchor, RelativeToAble {
 		get() {
 			val result: HashMap<String, ARElement> = HashMap()
 			assets.forEach {
-				result[it.id] = it
+				if (it.id != null)
+					result[it.id!!] = it
 				result.putAll(it.elementsById)
 			}
 			return result
@@ -27,10 +28,6 @@ abstract class ARAnchor : Anchor, RelativeToAble {
 		super.validate().let { if (!it.first) return it }
 		assets.forEach { asset -> asset.validate().let { if (!it.first) return it } }
 		return SUCCESS
-	}
-
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,assets=$assets)"
 	}
 
 

@@ -25,10 +25,6 @@ class Image : VisualAsset2D {
 		return SUCCESS
 	}
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions,width=\"$width\",height=\"$height\",orientationMode=\"$orientationMode\",backside=\"$backside\",href=\"$href\")"
-	}
-
 
 	internal constructor(root: ARML, base: LowLevelImage) : super(root, base) {
 		this.href = base.href.href

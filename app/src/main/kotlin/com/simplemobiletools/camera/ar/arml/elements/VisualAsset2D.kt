@@ -44,10 +44,6 @@ abstract class VisualAsset2D : VisualAsset {
 		return SUCCESS
 	}
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions,width=\"$width\",height=\"$height\",orientationMode=\"$orientationMode\",backside=\"$backside\")"
-	}
-
 
 	internal constructor(root: ARML, base: LowLevelVisualAsset2D) : super(root, base) {
 		this.backside = base.backside

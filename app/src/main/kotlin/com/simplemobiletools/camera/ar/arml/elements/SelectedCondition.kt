@@ -29,10 +29,6 @@ class SelectedCondition : Condition {
 
 	override fun validate(): Pair<Boolean, String> = SUCCESS
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",listener=\"$listener\",selected=$selected)"
-	}
-
 
 	internal constructor(root: ARML, base: LowLevelSelectedCondition) : super(base) {
 		this.selected = base.selected

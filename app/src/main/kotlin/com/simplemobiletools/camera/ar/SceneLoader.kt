@@ -166,7 +166,7 @@ class SceneLoader(
 
 				// Exhausted list of configs with no match found
 				if (!iterator.hasNext() && !trackerHandler.containsKey(config.tracker)) {
-					Log.w(TAG, "Trackable(id=\"$id\") has no supported config. Ignoring...")
+					Log.w(TAG, "${toShortString()} has no supported config. Ignoring...")
 					return
 				}
 
@@ -190,11 +190,11 @@ class SceneLoader(
 
 		val other = arml.elementsById[this.ref]
 		if (other == null) {
-			Log.w(TAG, "RelativeTo ${this.id} trying to reference an element that does not exist (yet?). Ignoring...")
+			Log.w(TAG, "${toShortString()} trying to reference an element that does not exist (yet?). Ignoring...")
 			return
 		}
 		if (other !is RelativeToAble) {
-			Log.w(TAG, "RelativeTo ${this.id} trying to reference an element that is not supported (${other.arElementType}). Ignoring...")
+			Log.w(TAG, "${toShortString()} trying to reference an element that is not supported (${other.arElementType}). Ignoring...")
 			return
 		}
 		relativeToRefHandler.getOrElse(other.arElementType) {
@@ -205,13 +205,13 @@ class SceneLoader(
 
 	private fun Trackable.handleRelativeTo(relativeTo: RelativeTo) {
 		if (!this.enabled) {
-			Log.w(TAG, "RelativeTo ${relativeTo.id} trying to reference an element that is disabled (${this.id}). Ignoring...")
+			Log.w(TAG, "${relativeTo.toShortString()} trying to reference an element that is disabled (${toShortString()}). Ignoring...")
 			return
 		}
 
 		if (sceneState.hasParentNode(this)) {
 			sceneController.addRelativeNode(relativeTo, this)
-			Log.d(TAG, "Created RelativeTo(id=${relativeTo.id})")
+			Log.d(TAG, "Created ${relativeTo.toShortString()}")
 		} else {
 			sceneState.addToRelativeQueue(this, relativeTo)
 		}
@@ -220,7 +220,7 @@ class SceneLoader(
 	private fun RelativeTo.handleRelativeTo(relativeTo: RelativeTo) {
 		if (sceneState.hasParentNode(this)) {
 			sceneController.addRelativeNode(relativeTo, this)
-			Log.d(TAG, "Created RelativeTo(id=${relativeTo.id})")
+			Log.d(TAG, "Created ${relativeTo.toShortString()}")
 		} else {
 			sceneState.addToRelativeQueue(this, relativeTo)
 		}

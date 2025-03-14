@@ -21,10 +21,6 @@ class Geometry : ARAnchor {
 
 	override val elementsById: HashMap<String, ARElement> = HashMap()
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,assets=$assets,geometry=$geometry)"
-	}
-
 	override fun validate(): Pair<Boolean, String> {
 		super.validate().let { if (!it.first) return it }
 		geometry.validate().let { if (!it.first) return it }

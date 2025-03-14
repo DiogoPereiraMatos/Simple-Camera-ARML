@@ -28,7 +28,7 @@ enum class ARElementType(val className: String) {
 
 val SUCCESS = Pair(true, "Success")
 
-class ARML {
+class ARML: PrintableElement {
 	val elements: ArrayList<ARElement> = ArrayList()
 	val scripts: ArrayList<Script> = ArrayList()
 	val styles: ArrayList<Style> = ArrayList()
@@ -45,7 +45,8 @@ class ARML {
 		get() {
 			val result = HashMap<String, ARElement>()
 			elements.forEach {
-				result[it.id] = it
+				if (it.id != null)
+					result[it.id!!] = it
 				result.putAll(it.elementsById)
 			}
 			return result
@@ -56,10 +57,6 @@ class ARML {
 		scripts.forEach { script -> script.validate().let { if (!it.first) return it } }
 		styles.forEach { style -> style.validate().let { if (!it.first) return it } }
 		return SUCCESS
-	}
-
-	override fun toString(): String {
-		return "${this::class.simpleName}(ARElements=$elements,scripts=$scripts,styles=$styles)"
 	}
 
 	override fun equals(other: Any?): Boolean {

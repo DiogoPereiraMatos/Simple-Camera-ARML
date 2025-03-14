@@ -4,10 +4,11 @@ import org.simpleframework.xml.Attribute
 import kotlin.random.Random
 
 
-abstract class ARElement {
+abstract class ARElement: PrintableElement {
 	abstract val arElementType: ARElementType
 
-	var id: String = Random(System.currentTimeMillis()).nextBytes(16).toString()
+	var id: String? = null
+	val uid: String = Random(System.nanoTime()).nextBytes(16).toString()
 
 	constructor() : super()
 
@@ -19,8 +20,8 @@ abstract class ARElement {
 
 	open fun validate(): Pair<Boolean, String> = SUCCESS
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\")"
+	fun toShortString(): String {
+		return "${this::class.simpleName}(id=${this.id}, uid=${this.uid})"
 	}
 
 	override fun equals(other: Any?): Boolean {

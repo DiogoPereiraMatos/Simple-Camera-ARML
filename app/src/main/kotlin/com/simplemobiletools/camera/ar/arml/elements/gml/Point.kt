@@ -32,10 +32,6 @@ class Point : GMLGeometry {
 		return SUCCESS
 	}
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",srsName=\"$srsName\",srsDimension=$srsDimension,pos=\"$pos\")"
-	}
-
 
 	internal constructor(root: ARML, base: LowLevelPoint) : super(root, base) {
 		this.pos.replaceAllWith(base.pos.split(' ').map { it.toDouble() })

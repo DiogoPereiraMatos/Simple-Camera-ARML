@@ -101,14 +101,14 @@ class ImageTrackingModule(
 		)
 	}
 
-	fun isImageKnown(src: String): Boolean {
+	fun isImageQueued(src: String): Boolean {
 		return queuedImages.containsKey(src)
 	}
 
 	fun addToImageQueue(trackable: Trackable, config: TrackableConfig) {
 		queuedImages.putIfAbsent(config.src, ArrayList())
 		queuedImages[config.src]!!.putIfAbsent(trackable)
-		Log.d(TAG, "Waiting for anchor (Image; src=${config.src}) for Trackable(id=${trackable.id})")
+		Log.d(TAG, "Waiting for anchor (Image; src=${config.src}) for ${trackable.toShortString()}")
 		return
 	}
 
@@ -127,7 +127,7 @@ class ImageTrackingModule(
 				continue
 			}
 
-			if (isImageKnown(img.name))
+			if (!isImageQueued(img.name))
 				continue
 
 			val waiting = getQueuedImages(img.name)!!
@@ -150,7 +150,7 @@ class ImageTrackingModule(
 				}
 				sceneController.setParentNode(trackable, anchorNode)
 				sceneView.addChildNode(anchorNode)
-				Log.d(TAG, "Assigned anchor to Trackable(id=${trackable.id})")
+				Log.d(TAG, "Assigned anchor to ${trackable.toShortString()}")
 
 				//TODO: Preload assets
 				for (asset in trackable.sortedAssets) {

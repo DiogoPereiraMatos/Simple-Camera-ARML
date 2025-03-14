@@ -27,10 +27,6 @@ class Text : VisualAsset2D {
 		return SUCCESS
 	}
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions,width=\"$width\",height=\"$height\",orientationMode=\"$orientationMode\",backside=\"$backside\",src=\"$src\",style=\"$style\",class=\"$css\")"
-	}
-
 
 	internal constructor(root: ARML, base: LowLevelText) : super(root, base) {
 		this.src = base.src

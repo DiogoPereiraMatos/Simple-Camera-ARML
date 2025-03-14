@@ -1,10 +1,11 @@
 package com.simplemobiletools.camera.ar.arml.elements.gml
 
 import com.simplemobiletools.camera.ar.arml.elements.ARML
+import com.simplemobiletools.camera.ar.arml.elements.PrintableElement
 import com.simplemobiletools.camera.ar.arml.elements.SUCCESS
 import org.simpleframework.xml.Attribute
 
-abstract class GMLGeometry {
+abstract class GMLGeometry: PrintableElement {
 	var id: String
 	var srsName: String = "WGS84"
 	var srsDimension: Int = 2
@@ -26,10 +27,6 @@ abstract class GMLGeometry {
 			)
 		}
 		return SUCCESS
-	}
-
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",srsName=\"$srsName\",srsDimension=$srsDimension)"
 	}
 
 

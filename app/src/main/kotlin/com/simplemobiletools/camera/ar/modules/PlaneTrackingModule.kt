@@ -83,7 +83,7 @@ class PlaneTrackingModule(
 
 	fun addToPlaneQueue(trackable: Trackable, planeType: Plane.Type) {
 		queuedAnchors[planeType]!!.putIfAbsent(trackable)
-		Log.d(TAG, "Waiting for anchor (Plane) for Trackable(id=${trackable.id})")
+		Log.d(TAG, "Waiting for anchor (Plane) for ${trackable.toShortString()}")
 		return
 	}
 
@@ -127,7 +127,7 @@ class PlaneTrackingModule(
 				}
 				sceneController.setParentNode(trackable, anchorNode)
 				sceneView.addChildNode(anchorNode)
-				Log.d(TAG, "Assigned anchor to Trackable(id=${trackable.id})")
+				Log.d(TAG, "Assigned anchor to ${trackable.toShortString()}")
 
 				//TODO: Preload assets
 				for (asset in trackable.sortedAssets) {

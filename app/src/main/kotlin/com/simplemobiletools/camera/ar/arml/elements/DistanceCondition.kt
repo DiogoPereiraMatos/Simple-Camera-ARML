@@ -38,10 +38,6 @@ class DistanceCondition : Condition {
 		return SUCCESS
 	}
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",min=$min,max=$max)"
-	}
-
 
 	internal constructor(root: ARML, base: LowLevelDistanceCondition) : super(base) {
 		this.min = base.min

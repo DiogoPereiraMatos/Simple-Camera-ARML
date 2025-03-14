@@ -21,7 +21,8 @@ class ScreenAnchor : Anchor {
 		get() {
 			val result: HashMap<String, ARElement> = HashMap()
 			assets.forEach {
-				result[it.id] = it
+				if (it.id != null)
+					result[it.id!!] = it
 				result.putAll(it.elementsById)
 			}
 			return result
@@ -31,10 +32,6 @@ class ScreenAnchor : Anchor {
 		super.validate().let { if (!it.first) return it }
 		assets.forEach { asset -> asset.validate().let { if (!it.first) return it } }
 		return SUCCESS
-	}
-
-	override fun toString(): String {
-		return "ScreenAnchor(id=\"$id\",enabled=$enabled,style=\"$style\",class=\"$css\",assets=$assets)"
 	}
 
 

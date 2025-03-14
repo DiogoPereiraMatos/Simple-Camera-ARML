@@ -358,12 +358,13 @@ class SceneController(
 			materialLoader = sceneView.materialLoader,
 			bitmap = bitmap,
 			size = size,
-			normal = Direction(0f),
+			normal = Direction(0f, 1f, 0f),
 			//center = Position(0f, 0f, 0f)
 		).apply {
 			transform(
 				position = Position(0f, 0f, 0f),
 				//FIXME: Rotation order: Z, Y, X. Want X-Y-Z, I think...
+				//FIXME: Image is placed facing +Z, but should be placed facing +Y (needs -90 X rotation) (could also need 90Z+90Y instead, depending on initial orientation)
 				rotation = rotation,
 				scale = io.github.sceneview.math.Size(1f, 1f, 1f)
 			)
@@ -422,7 +423,7 @@ class SceneController(
 
 			sceneState.getWaitingFor(original)!!.forEach { new ->
 				addRelativeNode(new, originalNode)
-				Log.d(TAG, "Assigned node to RelativeTo(id=${new.id})")
+				Log.d(TAG, "Assigned node to ${new.toShortString()}")
 
 				// Call recursively for RelativeTo relative to RelativeTo :)
 				propagateNode(new)

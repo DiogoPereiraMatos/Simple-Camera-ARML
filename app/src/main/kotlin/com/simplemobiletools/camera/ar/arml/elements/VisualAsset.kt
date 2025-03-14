@@ -37,10 +37,6 @@ abstract class VisualAsset : ARElement {
 		return SUCCESS
 	}
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions)"
-	}
-
 
 	internal constructor(root: ARML, base: LowLevelVisualAsset) : super(base) {
 		this.enabled = base.enabled ?: true

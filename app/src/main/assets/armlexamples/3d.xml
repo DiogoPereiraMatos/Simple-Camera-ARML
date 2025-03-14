@@ -1,0 +1,29 @@
+
+<arml xmlns="http://www.opengis.net/arml/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<ARElements>
+
+		<Feature id="3DFeature">
+			<anchors>
+
+				<Trackable>
+					<config>
+						<tracker xlink:href="#genericHUPlaneTracker" />
+						<src>look for a plane, idk</src>
+					</config>
+					<assets>
+						<Model>
+							<href xlink:href="models/misc/maxwell.glb" />
+							<Scale>
+								<x>0.1</x>
+								<y>0.1</y>
+								<z>0.1</z>
+							</Scale>
+						</Model>
+					</assets>
+				</Trackable>
+
+			</anchors>
+		</Feature>
+
+	</ARElements>
+</arml>

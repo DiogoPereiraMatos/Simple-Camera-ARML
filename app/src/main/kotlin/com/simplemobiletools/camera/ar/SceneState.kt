@@ -118,7 +118,7 @@ class SceneState(
 		val visualAssetNode = getVisualAssetNode(visualAsset)
 
 		if (visualAssetNode == null) {
-			Log.e(TAG, "Error getting visibility of VisualAsset(id=${visualAsset.id}). Node not found.")
+			Log.e(TAG, "Error getting visibility of ${visualAsset.toShortString()}. Node not found.")
 			return false
 		}
 
@@ -126,7 +126,7 @@ class SceneState(
 			is ModelNode -> visualAssetNode.isVisible
 			is ImageNode -> visualAssetNode.isVisible
 			else -> {
-				Log.e(TAG, "Error getting visibility of VisualAsset(id=${visualAsset.id}). Node type not supported.")
+				Log.e(TAG, "Error getting visibility of ${visualAsset.toShortString()}. Node type not supported.")
 				false
 			}
 		}
@@ -136,7 +136,7 @@ class SceneState(
 		val visualAssetNode = getVisualAssetNode(visualAsset)
 
 		if (visualAssetNode == null) {
-			Log.e(TAG, "Error setting visibility of VisualAsset(id=${visualAsset.id}). Node not found.")
+			Log.e(TAG, "Error setting visibility of ${visualAsset.toShortString()}. Node not found.")
 			return
 		}
 
@@ -150,7 +150,7 @@ class SceneState(
 		if (getVisibility(visualAsset)) {
 			return
 		}
-		Log.d(TAG, "Showing VisualAsset(id=${visualAsset.id})")
+		Log.d(TAG, "Showing ${visualAsset.toShortString()}")
 		setVisibility(visualAsset, true)
 	}
 
@@ -158,7 +158,7 @@ class SceneState(
 		if (!getVisibility(visualAsset)) {
 			return
 		}
-		Log.d(TAG, "Hiding VisualAsset(id=${visualAsset.id})")
+		Log.d(TAG, "Hiding ${visualAsset.toShortString()}")
 		setVisibility(visualAsset, false)
 	}
 
@@ -171,13 +171,13 @@ class SceneState(
 	fun addToRelativeQueue(original: Trackable, new: RelativeTo) {
 		queuedRelativeAnchors.putIfAbsent(original, ArrayList())
 		queuedRelativeAnchors[original]!!.add(new)
-		Log.d(TAG, "Waiting for anchor for RelativeTo(id=${new.id}), aka Trackable(id=${original.id})")
+		Log.d(TAG, "Waiting for anchor for ${new.toShortString()}, aka ${original.toShortString()}")
 	}
 
 	fun addToRelativeQueue(original: RelativeTo, new: RelativeTo) {
 		queuedRelativeAnchors.putIfAbsent(original, ArrayList())
 		queuedRelativeAnchors[original]!!.add(new)
-		Log.d(TAG, "Waiting for anchor for RelativeTo(id=${new.id}), aka RelativeTo(id=${original.id})")
+		Log.d(TAG, "Waiting for anchor for ${new.toShortString()}, aka ${original.toShortString()}")
 	}
 
 	fun getWaitingFor(anchor: Anchor): ArrayList<RelativeTo>? {
@@ -206,11 +206,11 @@ class SceneState(
 		setVisibility(visualAsset, show)
 
 		node.addChildNode(visualAssetNode)
-		Log.d(TAG, "Placed VisualAsset(id=${visualAsset.id})")
+		Log.d(TAG, "Placed ${visualAsset.toShortString()}")
 
 		if (visualAsset.conditions.isNotEmpty()) {
 			conditionalVisualAssets.add(visualAsset)
-			Log.d(TAG, "Added VisualAsset(id=${visualAsset.id}) to conditionalVisualAssets")
+			Log.d(TAG, "Added ${visualAsset.toShortString()} to conditionalVisualAssets")
 		}
 	}
 

@@ -29,10 +29,6 @@ class Trackable : ARAnchor {
 		return SUCCESS
 	}
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,assets=$assets,config=$config,size=$size)"
-	}
-
 
 	internal constructor(root: ARML, base: LowLevelTrackable) : super(root, base) {
 		this.size = base.size
@@ -55,7 +51,7 @@ internal class LowLevelTrackable : LowLevelARAnchor() {
 
 
 
-class TrackableConfig {
+class TrackableConfig: PrintableElement {
 	var tracker: String
 	var src: String
 	var order: Int = Int.MAX_VALUE
@@ -70,10 +66,6 @@ class TrackableConfig {
 	}
 
 	fun validate(): Pair<Boolean, String> = SUCCESS
-
-	override fun toString(): String {
-		return "Config(tracker=\"$tracker\",src=\"$src\",order=$order)"
-	}
 
 
 	internal constructor(root: ARML, base: LowLevelTrackableConfig) : this(base.tracker.href, base.src) {
@@ -128,10 +120,6 @@ class Tracker : ARElement {
 	override val elementsById: HashMap<String, ARElement> = HashMap()
 
 	override fun validate(): Pair<Boolean, String> = SUCCESS
-
-	override fun toString(): String {
-		return "Tracker(id=\"$id\",uri=\"$uri\",src=\"$src\")"
-	}
 
 
 	internal constructor(root: ARML, base: LowLevelTracker) : super(base) {

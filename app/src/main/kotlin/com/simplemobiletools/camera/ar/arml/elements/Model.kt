@@ -47,10 +47,6 @@ class Model : VisualAsset, RelativeToAble {
 		return SUCCESS
 	}
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions,href=\"$href\",type=\"$type\",scale=$scale)"
-	}
-
 
 	internal constructor(root: ARML, base: LowLevelModel) : super(root, base) {
 		this.href = base.href.href

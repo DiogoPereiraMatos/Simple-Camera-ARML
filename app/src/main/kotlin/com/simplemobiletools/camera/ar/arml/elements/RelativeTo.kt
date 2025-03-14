@@ -21,10 +21,6 @@ class RelativeTo : ARAnchor {
 		this.geometry = other.geometry
 	}
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,assets=$assets,ref=\"$ref\",geometry=$geometry)"
-	}
-
 	override fun validate(): Pair<Boolean, String> {
 		super.validate().let { if (!it.first) return it }
 		geometry.validate().let { if (!it.first) return it }

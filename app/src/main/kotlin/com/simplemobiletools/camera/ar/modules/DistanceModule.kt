@@ -78,7 +78,7 @@ class DistanceModule(
 		condition as DistanceCondition
 
 		if (!sceneController.hasParentNode(visualAsset)) {
-			Log.e(TAG, "No parent node for ${visualAsset.id}")
+			Log.e(TAG, "No parent node for ${visualAsset.toShortString()}")
 			return false
 		}
 

@@ -69,7 +69,7 @@
 					</gml:Point>
 					<assets>
 						<Image>
-							<href xlink:href="good_images/tate.jpg" />
+							<href xlink:href="images/dice_1.png" />
 							<height>0.25</height>
 							<width>0.25</width>
 						</Image>
@@ -87,7 +87,7 @@
 					</gml:Point>
 					<assets>
 						<Image>
-							<href xlink:href="good_images/tate.jpg" />
+							<href xlink:href="images/dice_2.png" />
 							<Orientation>
 								<roll>90</roll>
 							</Orientation>
@@ -108,7 +108,7 @@
 					</gml:Point>
 					<assets>
 						<Image>
-							<href xlink:href="good_images/tate.jpg" />
+							<href xlink:href="images/dice_5.png" />
 							<Orientation>
 								<roll>180</roll>
 							</Orientation>
@@ -129,7 +129,7 @@
 					</gml:Point>
 					<assets>
 						<Image>
-							<href xlink:href="good_images/tate.jpg" />
+							<href xlink:href="images/dice_4.png" />
 							<Orientation>
 								<roll>-90</roll>
 							</Orientation>
@@ -150,7 +150,7 @@
 					</gml:Point>
 					<assets>
 						<Image>
-							<href xlink:href="good_images/tate.jpg" />
+							<href xlink:href="images/dice_3.png" />
 							<Orientation>
 								<tilt>90</tilt>
 							</Orientation>
@@ -171,7 +171,7 @@
 					</gml:Point>
 					<assets>
 						<Image>
-							<href xlink:href="good_images/tate.jpg" />
+							<href xlink:href="images/dice_6.png" />
 							<Orientation>
 								<tilt>-90</tilt>
 							</Orientation>

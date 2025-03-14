@@ -17,7 +17,8 @@ class Feature : ARElement {
 		get() {
 			val result = HashMap<String, ARElement>()
 			anchors.forEach {
-				result[it.id] = it
+				if (it.id != null)
+					result[it.id!!] = it
 				result.putAll(it.elementsById)
 			}
 			return result
@@ -26,10 +27,6 @@ class Feature : ARElement {
 	override fun validate(): Pair<Boolean, String> {
 		anchors.forEach { anchor -> anchor.validate().let { if (!it.first) return it } }
 		return SUCCESS
-	}
-
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",name=\"$name\",description=\"$description\",enabled=$enabled,metadata=$metadata,anchors=$anchors)"
 	}
 
 

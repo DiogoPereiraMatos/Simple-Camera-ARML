@@ -47,7 +47,7 @@ class ParsingTest {
 		println("OK")
 		println(obj)
 
-		//Will fail!
+		//FIXME: Will fail!
 		assert(obj.metadata.toString() == """
 			str1
 			<test>elem1</test>

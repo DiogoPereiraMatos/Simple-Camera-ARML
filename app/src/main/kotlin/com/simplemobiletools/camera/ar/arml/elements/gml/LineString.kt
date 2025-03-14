@@ -31,10 +31,6 @@ class LineString : GMLGeometry {
 		return SUCCESS
 	}
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",srsName=\"$srsName\",srsDimension=$srsDimension,posList=$posList,pointProperty=$pointProperty)"
-	}
-
 
 	internal constructor(root: ARML, base: LowLevelLineString) : super(root, base) {
 		this.posList.replaceAllWith(base.posList.split(' ').map { it.toDouble() })

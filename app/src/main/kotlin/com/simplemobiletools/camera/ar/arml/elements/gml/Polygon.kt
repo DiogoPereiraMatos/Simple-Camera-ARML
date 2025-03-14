@@ -1,6 +1,7 @@
 package com.simplemobiletools.camera.ar.arml.elements.gml
 
 import com.simplemobiletools.camera.ar.arml.elements.ARML
+import com.simplemobiletools.camera.ar.arml.elements.PrintableElement
 import com.simplemobiletools.camera.ar.arml.elements.SUCCESS
 import com.simplemobiletools.camera.ar.arml.elements.replaceAllWith
 import org.simpleframework.xml.Element
@@ -22,10 +23,6 @@ class Polygon : GMLGeometry {
 		exterior.validate().let { if (!it.first) return it }
 		interior.forEach { linearRing -> linearRing.validate().let { if (!it.first) return it } }
 		return SUCCESS
-	}
-
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",srsName=\"$srsName\",srsDimension=$srsDimension,exterior=$exterior,interior=$interior)"
 	}
 
 
@@ -54,7 +51,7 @@ internal class LowLevelPolygon : LowLevelGMLGeometry() {
 
 
 
-class LinearRing {
+class LinearRing: PrintableElement {
 	val posList: ArrayList<Double> = ArrayList()
 
 	constructor(posList: List<Double>) {
@@ -70,10 +67,6 @@ class LinearRing {
 		//if (posList.first() != posList.last()) return Pair(false, "LinearRing must be closed.")
 		if (posList.subList(0,1) != posList.subList(posList.size-2,posList.size-1)) return Pair(false, "LinearRing must be closed.")
 		return SUCCESS
-	}
-
-	override fun toString(): String {
-		return "${this::class.simpleName}(posList=$posList)"
 	}
 
 

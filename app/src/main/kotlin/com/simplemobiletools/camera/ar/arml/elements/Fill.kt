@@ -23,10 +23,6 @@ class Fill : VisualAsset2D {
 		return SUCCESS
 	}
 
-	override fun toString(): String {
-		return "${this::class.simpleName}(id=\"$id\",enabled=$enabled,zOrder=$zOrder,orientation=$orientation,scalingMode=$scalingMode,conditions=$conditions,width=\"$width\",height=\"$height\",orientationMode=\"$orientationMode\",backside=\"$backside\",style=\"$style\",class=\"$css\")"
-	}
-
 
 	internal constructor(root: ARML, base: LowLevelFill) : super(root, base) {
 		this.style = base.style
