@@ -27,6 +27,7 @@ import io.github.sceneview.node.ImageNode
 import io.github.sceneview.node.ModelNode
 import io.github.sceneview.node.Node
 import io.github.sceneview.utils.readBuffer
+import java.io.InputStream
 
 class SceneController(
 	private val context: SceneviewActivity,
@@ -197,27 +198,34 @@ class SceneController(
 		Log.d(TAG, "Loading ARML from path: $armlPath")
 
 		// Read content
-		//TODO: Fetch remote
-		val armlContent = try {
-			Log.d(TAG, "Reading content...")
-			context.assets.open(armlPath).readBuffer().array().decodeToString()
-		} catch (e : Exception) {
-			Log.e(TAG, "Failed to read ARML file.", e)
-			instructionText = "Failed to read ARML file!"
-			throw e
-		}
+		val thread = Thread {
+			val stream: InputStream = if (armlPath.startsWith("http://", true) || armlPath.startsWith("https://", true)) {
+				val url = java.net.URL(armlPath)
+				url.openStream()
+			} else projectAssets.open(armlPath)
 
-		// Parse ARML
-		try {
-			Log.d(TAG, "Parsing...")
-			val result : ARML = ARMLParser().loads(armlContent)
-			Log.d(TAG, "Parsing... OK")
-			queuedARML = result
-		} catch (e : Exception) {
-			Log.e(TAG, "Failed to parse ARML.", e)
-			instructionText = "Failed to parse ARML!"
-			throw e
+			val armlContent = try {
+				Log.d(TAG, "Reading content...")
+				stream.readBuffer().array().decodeToString()
+			} catch (e: Exception) {
+				Log.e(TAG, "Failed to read ARML file.", e)
+				instructionText = "Failed to read ARML file!"
+				throw e
+			}
+
+			// Parse ARML
+			try {
+				Log.d(TAG, "Parsing...")
+				val result: ARML = ARMLParser().loads(armlContent)
+				Log.d(TAG, "Parsing... OK")
+				queuedARML = result
+			} catch (e: Exception) {
+				Log.e(TAG, "Failed to parse ARML.", e)
+				instructionText = "Failed to parse ARML!"
+				throw e
+			}
 		}
+		thread.start()
 	}
 
 
@@ -245,10 +253,17 @@ class SceneController(
 			thingsToDo["ImageTracking"] = { _, frame -> imageTrackingModule.onFrameUpdate(this, frame) }
 		}
 
-		//TODO: Fetch remote
-		val bitmap = BitmapFactory.decodeStream(context.assets.open(config.src))
-		imageTrackingModule.addImageToDatabase(config.src, bitmap, trackable.size)
-		imageTrackingModule.addToImageQueue(trackable, config)
+		val thread = Thread {
+			val stream: InputStream = if (config.src.startsWith("http://", true) || config.src.startsWith("https://", true)) {
+				val url = java.net.URL(config.src)
+				url.openStream()
+			} else projectAssets.open(config.src)
+
+			val bitmap: Bitmap = BitmapFactory.decodeStream(stream)
+			imageTrackingModule.addImageToDatabase(config.src, bitmap, trackable.size)
+			imageTrackingModule.addToImageQueue(trackable, config)
+		}
+		thread.start()
 	}
 
 	fun handlePlaneTracker(trackable: Trackable, planeType: Plane.Type) {
@@ -320,64 +335,71 @@ class SceneController(
 
 	fun attachImage(node: Node, image: Image) {
 		//TODO: Preload images
-		//TODO: Fetch remote image
-		val bitmap: Bitmap = BitmapFactory.decodeStream(projectAssets.open(image.href))
+		val thread = Thread {
+			val stream: InputStream = if (image.href.startsWith("http://", true) || image.href.startsWith("https://", true)) {
+				val url = java.net.URL(image.href)
+				url.openStream()
+			} else projectAssets.open(image.href)
 
-		var imageWidth = 1f
-		var imageHeight = 1f
+			val bitmap: Bitmap = BitmapFactory.decodeStream(stream)
 
-		if (image.width is SizePercentage || image.height is SizePercentage) {
-			//TODO: percentages
-			//Keep default
-		} else if (image.width == null && image.height == null) {
-			//TODO: get extentX and extentY from plane (PlaneTrackingModule). What about image tracking?
-			//Keep default
-		}
-		else if (image.width == null) {
-			imageHeight = (image.height!! as SizeAbsolute).m
-			imageWidth = imageHeight * (bitmap.width.toFloat() / bitmap.height.toFloat())
-		}
-		else if (image.height == null) {
-			imageWidth = (image.width!! as SizeAbsolute).m
-			imageHeight = imageWidth * (bitmap.height.toFloat() / bitmap.width.toFloat())
-		}
-		else {
-			imageWidth = (image.width!! as SizeAbsolute).m
-			imageHeight = (image.height!! as SizeAbsolute).m
-		}
+			var imageWidth = 1f
+			var imageHeight = 1f
 
-		val size = io.github.sceneview.math.Size(imageWidth, imageHeight)
+			if (image.width is SizePercentage || image.height is SizePercentage) {
+				//TODO: percentages
+				//Keep default
+			} else if (image.width == null && image.height == null) {
+				//TODO: get extentX and extentY from plane (PlaneTrackingModule). What about image tracking?
+				//Keep default
+			}
+			else if (image.width == null) {
+				imageHeight = (image.height!! as SizeAbsolute).m
+				imageWidth = imageHeight * (bitmap.width.toFloat() / bitmap.height.toFloat())
+			}
+			else if (image.height == null) {
+				imageWidth = (image.width!! as SizeAbsolute).m
+				imageHeight = imageWidth * (bitmap.height.toFloat() / bitmap.width.toFloat())
+			}
+			else {
+				imageWidth = (image.width!! as SizeAbsolute).m
+				imageHeight = (image.height!! as SizeAbsolute).m
+			}
 
-		// From -180->180 to 0->360
-		val x = if (image.rotationVector.x < 0f) 360f + image.rotationVector.x else image.rotationVector.x
-		val y = if (image.rotationVector.y < 0f) 360f + image.rotationVector.y else image.rotationVector.y
-		val z = if (image.rotationVector.z < 0f) 360f + image.rotationVector.z else image.rotationVector.z
-		val rotation = Rotation(x, y, z)
+			val size = io.github.sceneview.math.Size(imageWidth, imageHeight)
 
-		val imageNode = ImageNode(
-			materialLoader = sceneView.materialLoader,
-			bitmap = bitmap,
-			size = size,
-			normal = Direction(0f, 1f, 0f),
-			//center = Position(0f, 0f, 0f)
-		).apply {
-			transform(
-				position = Position(0f, 0f, 0f),
-				//FIXME: Rotation order: Z, Y, X. Want X-Y-Z, I think...
-				//FIXME: Image is placed facing +Z, but should be placed facing +Y (needs -90 X rotation) (could also need 90Z+90Y instead, depending on initial orientation)
-				rotation = rotation,
-				scale = io.github.sceneview.math.Size(1f, 1f, 1f)
+			// From -180->180 to 0->360
+			val x = if (image.rotationVector.x < 0f) 360f + image.rotationVector.x else image.rotationVector.x
+			val y = if (image.rotationVector.y < 0f) 360f + image.rotationVector.y else image.rotationVector.y
+			val z = if (image.rotationVector.z < 0f) 360f + image.rotationVector.z else image.rotationVector.z
+			val rotation = Rotation(x, y, z)
+
+			val imageNode = ImageNode(
+				materialLoader = sceneView.materialLoader,
+				bitmap = bitmap,
+				size = size,
+				normal = Direction(0f, 1f, 0f),
+				//center = Position(0f, 0f, 0f)
+			).apply {
+				transform(
+					position = Position(0f, 0f, 0f),
+					//FIXME: Rotation order: Z, Y, X. Want X-Y-Z, I think...
+					//FIXME: Image is placed facing +Z, but should be placed facing +Y (needs -90 X rotation) (could also need 90Z+90Y instead, depending on initial orientation)
+					rotation = rotation,
+					scale = io.github.sceneview.math.Size(1f, 1f, 1f)
+				)
+			}
+
+			sceneState.addVisualAssetToScene(
+				node = node,
+				visualAssetNode = imageNode,
+				visualAsset = image,
+				show = image.evaluateConditions()
 			)
+
+			imageNode.onSingleTapUp = { selectionModule.toggleSelected(image); true }
 		}
-
-		sceneState.addVisualAssetToScene(
-			node = node,
-			visualAssetNode = imageNode,
-			visualAsset = image,
-			show = image.evaluateConditions()
-		)
-
-		imageNode.onSingleTapUp = { selectionModule.toggleSelected(image); true }
+		thread.start()
 	}
 
 
